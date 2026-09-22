@@ -1,0 +1,59 @@
+name: EAS Update
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+  workflow_dispatch:
+
+concurrency:
+  group: version-bump-main
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Bump app version
+        id: version
+        run: echo "value=$(node scripts/bump-app-version.js)" >> "$GITHUB_OUTPUT"
+        working-directory: app
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/app.json
+          git commit -m "chore: bump app version to ${{ steps.version.outputs.value }} [skip ci]"
+          for attempt in 1 2 3 4 5; do
+            git push && exit 0
+            [ "$attempt" -eq 5 ] && exit 1
+            sleep $((attempt * 3))
+            git fetch origin main
+            git rebase origin/main
+          done
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: app
+
+      - name: Publish EAS Update
+        run: npx eas-cli update --branch production --message "v${{ steps.version.outputs.value }} (${{ github.sha }})"
+        working-directory: app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

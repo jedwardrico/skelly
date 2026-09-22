@@ -78,3 +78,32 @@ react-native-web`) since those aren't installed by default.
 
 The skull's IP is persisted locally (`AsyncStorage`) so you don't have to
 retype it every launch.
+
+## EAS
+
+The app is wired for [EAS Update](https://docs.expo.dev/eas-update/introduction/)
+(`eas.json`, `expo-updates`, `runtimeVersion.policy: sdkVersion` in
+`app.json`) so JS/asset changes can ship over the air without an app-store
+resubmission, same as `lift-tracker`'s setup. One manual step is needed
+before it's usable, since it has to happen under your own Expo account:
+
+```
+npx eas-cli login
+npx eas-cli init      # links this app to a real EAS project, writes
+                       # extra.eas.projectId and updates.url into app.json
+```
+
+After that:
+
+- `npm run update:qa` publishes the current JS bundle to the `production`
+  update branch by hand.
+- [`../.github/workflows/eas-update.yml`](../.github/workflows/eas-update.yml)
+  does the same automatically on every push to `main` that touches `app/`:
+  it bumps the patch version in `app.json` (`scripts/bump-app-version.js`),
+  commits that, then runs `eas update`. It needs an `EXPO_TOKEN` repo secret
+  (an [Expo access token](https://docs.expo.dev/accounts/programmatic-access/))
+  with publish access to the project.
+
+`eas build` (producing installable dev/production binaries instead of OTA
+updates) isn't set up yet - `eas.json` only pins the CLI version, with no
+`build` profiles, matching `lift-tracker` today.

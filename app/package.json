@@ -9,6 +9,7 @@
     "expo-document-picker": "~57.0.2",
     "expo-speech": "~57.0.3",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.23",
     "react": "19.2.3",
     "react-native": "0.86.3"
   },
@@ -20,7 +21,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "update:qa": "eas update --branch production --message 'QA'"
   },
   "private": true
 }
