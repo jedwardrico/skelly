@@ -14,6 +14,8 @@
 class ControlAPI {
 public:
   using ServoCommandHandler = std::function<bool(const String &name, float angleDeg)>;
+  using ServoZeroSetHandler = std::function<bool(const String &name, float angleDeg)>;
+  using ServoZeroResetHandler = std::function<bool(const String &name)>;
   using PlayCommandHandler = std::function<bool(const String &file)>;
   using StopCommandHandler = std::function<void()>;
   using StatusProvider = std::function<void(JsonObject &out)>;
@@ -27,6 +29,10 @@ public:
   void loop();
 
   void onServoCommand(ServoCommandHandler handler) { servoHandler = handler; }
+  // Persists a servo's rest/"zero" angle (survives reboot) without moving it.
+  void onServoZeroSet(ServoZeroSetHandler handler) { servoZeroSetHandler = handler; }
+  // Clears a persisted zero override, reverting to the compiled-in default.
+  void onServoZeroReset(ServoZeroResetHandler handler) { servoZeroResetHandler = handler; }
   void onPlayCommand(PlayCommandHandler handler) { playHandler = handler; }
   void onStopCommand(StopCommandHandler handler) { stopHandler = handler; }
   // Lets main.cpp fill in the "status" JSON object (playing state, jaw
@@ -40,6 +46,8 @@ private:
   uint32_t lastBroadcastMs = 0;
 
   ServoCommandHandler servoHandler;
+  ServoZeroSetHandler servoZeroSetHandler;
+  ServoZeroResetHandler servoZeroResetHandler;
   PlayCommandHandler playHandler;
   StopCommandHandler stopHandler;
   StatusProvider statusProvider;

@@ -5,8 +5,8 @@ Animatronic talking skeleton, driven by an ESP32.
 - Servos (via a PCA9685) move the jaw, neck, and eyes.
 - A MAX98357A I2S amplifier plays speech clips, and the jaw is driven live
   off the audio's own volume envelope - no pre-baked mouth timing needed.
-- A WiFi JSON/WebSocket control API is the integration point for a planned
-  React Native app / web page.
+- A WiFi JSON/WebSocket control API is the integration point for the
+  React Native app (`app/`).
 - An 8BitDo Ultimate controller, via
   [BluePad32](https://bluepad32.readthedocs.io/en/latest/), is planned for
   live puppeteering - scaffolded but not wired up yet (see
@@ -36,11 +36,12 @@ lib/ControlAPI/             WiFi + REST/WebSocket JSON control surface
 lib/GamepadController/      BluePad32 scaffold (compiles to nothing by default)
 data/audio/                 drop .mp3/.wav speech clips here
 docs/                       architecture, wiring, API reference, BluePad32 setup
+app/                        React Native (Expo) control app, see app/README.md
 ```
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pieces fit
-together, and [`docs/API.md`](docs/API.md) for the control API that the app
-will eventually talk to.
+together, [`docs/API.md`](docs/API.md) for the control API the app talks to,
+and [`app/README.md`](app/README.md) for the app itself.
 
 ## Getting started
 
@@ -70,8 +71,8 @@ extension).
 - [x] Servo control (PCA9685, named channels, non-blocking eased moves)
 - [x] Speech playback (MAX98357A, MP3/WAV, audio-synced jaw)
 - [x] WiFi JSON/WebSocket control API
-- [ ] React Native app / web page consuming the control API
-  (see [`docs/API.md`](docs/API.md))
+- [x] React Native app consuming the control API, with on-device TTS
+  (see [`app/README.md`](app/README.md))
 - [ ] File upload endpoint for pushing new clips over WiFi instead of USB
 - [ ] BluePad32 + 8BitDo Ultimate controller support
   (see [`docs/BLUEPAD32.md`](docs/BLUEPAD32.md) for what's already

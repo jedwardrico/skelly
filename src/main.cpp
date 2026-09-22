@@ -21,8 +21,10 @@ static void buildStatus(JsonObject &out) {
   out["file"] = audio.currentFile();
   out["jawLevel"] = audio.jawLevel();
   JsonObject servoAngles = out["servos"].to<JsonObject>();
+  JsonObject servoZeros = out["servoZero"].to<JsonObject>();
   for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
     servoAngles[SERVO_CHANNELS[i].name] = servos.currentAngle(SERVO_CHANNELS[i].channel);
+    servoZeros[SERVO_CHANNELS[i].name] = servos.restAngle(SERVO_CHANNELS[i].name);
   }
 }
 
@@ -45,6 +47,12 @@ void setup() {
   controlApi.onStopCommand([]() { audio.stop(); });
   controlApi.onServoCommand([](const String &name, float angle) {
     return servos.setAngle(name.c_str(), angle);
+  });
+  controlApi.onServoZeroSet([](const String &name, float angle) {
+    return servos.setRestAngle(name.c_str(), angle);
+  });
+  controlApi.onServoZeroReset([](const String &name) {
+    return servos.resetRestAngle(name.c_str());
   });
   controlApi.onStatusRequest(buildStatus);
   controlApi.begin();
