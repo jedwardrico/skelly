@@ -82,18 +82,12 @@ retype it every launch.
 ## EAS
 
 The app is wired for [EAS Update](https://docs.expo.dev/eas-update/introduction/)
-(`eas.json`, `expo-updates`, `runtimeVersion.policy: sdkVersion` in
-`app.json`) so JS/asset changes can ship over the air without an app-store
-resubmission, same as `lift-tracker`'s setup. One manual step is needed
-before it's usable, since it has to happen under your own Expo account:
-
-```
-npx eas-cli login
-npx eas-cli init      # links this app to a real EAS project, writes
-                       # extra.eas.projectId and updates.url into app.json
-```
-
-After that:
+(`eas.json`, `expo-updates`, `runtimeVersion.policy: sdkVersion`, and
+`extra.eas.projectId`/`updates.url` in `app.json`) so JS/asset changes can
+ship over the air without an app-store resubmission, same as
+`lift-tracker`'s setup. The app is already linked to its EAS project; if you
+need to re-link it (e.g. a fresh Expo account) run `npx eas-cli login` then
+`npx eas-cli init` from `app/`.
 
 - `npm run update:qa` publishes the current JS bundle to the `production`
   update branch by hand.
