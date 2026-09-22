@@ -44,8 +44,8 @@ static const ServoChannelDef SERVO_CHANNELS[] = {
     {"jaw", 0, 0, 55, 0},
     {"neck_pan", 1, 30, 150, 90},
     {"neck_tilt", 2, 60, 120, 90},
-    {"eye_l", 3, 60, 120, 90},
-    {"eye_r", 4, 60, 120, 90},
+    {"eye_pan", 3, 60, 120, 90},
+    {"eye_tilt", 4, 60, 120, 90},
 };
 static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_CHANNELS[0]);
 
