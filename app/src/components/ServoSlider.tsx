@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
+import { useTheme } from '../theme/ThemeContext';
 import type { ServoName } from '../api/skellyClient';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 
 export function ServoSlider({ name, label, min, max }: Props) {
   const { client, status } = useSkelly();
+  const { colors } = useTheme();
   const [dragging, setDragging] = useState(false);
   const [localValue, setLocalValue] = useState<number | null>(null);
 
@@ -30,8 +32,8 @@ export function ServoSlider({ name, label, min, max }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.labelRow}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value}>{Math.round(value)}°</Text>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>{label}</Text>
+        <Text style={[styles.value, { color: colors.textSecondary }]}>{Math.round(value)}°</Text>
       </View>
       <Slider
         style={styles.slider}
@@ -45,8 +47,8 @@ export function ServoSlider({ name, label, min, max }: Props) {
           setLocalValue(v);
           client.setServo(name, v).catch(() => {});
         }}
-        minimumTrackTintColor="#6c5ce7"
-        maximumTrackTintColor="#dfe6e9"
+        minimumTrackTintColor={colors.accent}
+        maximumTrackTintColor={colors.border}
       />
     </View>
   );
@@ -55,7 +57,7 @@ export function ServoSlider({ name, label, min, max }: Props) {
 const styles = StyleSheet.create({
   container: { marginBottom: 18 },
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  label: { fontSize: 15, fontWeight: '600', color: '#2d3436' },
-  value: { fontSize: 14, color: '#636e72' },
+  label: { fontSize: 15, fontWeight: '600' },
+  value: { fontSize: 14 },
   slider: { width: '100%', height: 36 },
 });

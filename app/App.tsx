@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SkellyProvider } from './src/context/SkellyContext';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { ConnectScreen } from './src/screens/ConnectScreen';
 import { ControlScreen } from './src/screens/ControlScreen';
 import { SpeechScreen } from './src/screens/SpeechScreen';
@@ -18,45 +19,47 @@ const TABS: { key: Tab; label: string }[] = [
 
 function AppShell() {
   const [tab, setTab] = useState<Tab>('connect');
+  const { colors } = useTheme();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.screen}>
         {tab === 'connect' && <ConnectScreen />}
         {tab === 'control' && <ControlScreen />}
         {tab === 'speech' && <SpeechScreen />}
         {tab === 'setup' && <ServoConfigScreen />}
       </View>
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
         {TABS.map((t) => (
           <Pressable key={t.key} style={styles.tabButton} onPress={() => setTab(t.key)}>
-            <Text style={[styles.tabLabel, tab === t.key && styles.tabLabelActive]}>{t.label}</Text>
+            <Text style={[styles.tabLabel, { color: colors.textMuted }, tab === t.key && { color: colors.accent }]}>
+              {t.label}
+            </Text>
           </Pressable>
         ))}
       </View>
-      <StatusBar style="auto" />
+      <StatusBar style={colors.statusBarStyle} />
     </SafeAreaView>
   );
 }
 
 export default function App() {
   return (
-    <SkellyProvider>
-      <AppShell />
-    </SkellyProvider>
+    <ThemeProvider>
+      <SkellyProvider>
+        <AppShell />
+      </SkellyProvider>
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+  safeArea: { flex: 1 },
   screen: { flex: 1 },
   tabBar: {
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#dfe6e9',
-    backgroundColor: '#fff',
   },
   tabButton: { flex: 1, paddingVertical: 12, alignItems: 'center' },
-  tabLabel: { fontSize: 13, fontWeight: '600', color: '#95a5a6' },
-  tabLabelActive: { color: '#6c5ce7' },
+  tabLabel: { fontSize: 13, fontWeight: '600' },
 });
