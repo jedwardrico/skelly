@@ -1,4 +1,4 @@
-# skelly
+# Skelly
 
 Animatronic talking skeleton, driven by an ESP32.
 
