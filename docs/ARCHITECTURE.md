@@ -74,10 +74,9 @@ and REST, so the React Native app (`app/`), a browser page, or `curl` can all
 drive it identically. Three speech pipelines are worth planning for:
 
 1. **Pre-baked clips (supported today)**: app/cloud generates or picks a
-   speech `.mp3`/`.wav`, gets it onto the device (e.g. an HTTP upload
-   endpoint - not yet implemented, see `docs/API.md`'s TODO) into
-   `data/audio/` or uploaded to LittleFS at runtime, then triggers it with
-   `play`.
+   speech `.mp3`/`.wav`, gets it onto the device either over USB
+   (`data/audio/` + `pio run --target uploadfs`) or over WiFi via `POST
+   /api/upload` (see `docs/API.md`), then triggers it with `play`.
 2. **Phone-side TTS (supported today, in `app/`)**: the app speaks typed
    text with the phone's own on-device TTS engine and, over the same control
    API, puppets the jaw servo in time with it. The audio comes from the

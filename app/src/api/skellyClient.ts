@@ -185,6 +185,27 @@ export class SkellyClient {
     return body.files ?? [];
   }
 
+  // Pushes a recorded clip to the skull's LittleFS over WiFi (see
+  // POST /api/upload in docs/API.md) instead of `pio run --target uploadfs`
+  // over USB. `name` must end in .mp3/.wav; the firmware sanitizes it and
+  // writes it into AUDIO_DIR, overwriting any existing file of that name.
+  async uploadFile(uri: string, name: string, mimeType: string): Promise<string> {
+    const form = new FormData();
+    // React Native's fetch/FormData accepts this {uri,name,type} shape in
+    // place of a Blob for a file picked via expo-document-picker.
+    form.append('file', { uri, name, type: mimeType } as unknown as Blob);
+
+    const res = await fetch(`${this.baseUrl}/api/upload`, {
+      method: 'POST',
+      body: form,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.ok) {
+      throw new Error(body?.error ?? `HTTP ${res.status}`);
+    }
+    return body.file as string;
+  }
+
   // Prefers the WebSocket (instant, no extra round trip) and falls back to
   // REST if it isn't connected yet.
   async play(file: string): Promise<boolean> {

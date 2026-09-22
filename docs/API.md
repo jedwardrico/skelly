@@ -56,6 +56,22 @@ configured min/max. Does **not** move the servo; follow with `/api/servo` if
 you want it to jump there too. Response: `{"ok":true}` or
 `{"ok":false,"error":"..."}`.
 
+### `POST /api/upload`
+`multipart/form-data` with a single file field. The uploaded filename (path
+components stripped) is sanitized to safe characters and must end in `.mp3`
+or `.wav`; it's written straight into `AUDIO_DIR` (`/audio`) on LittleFS,
+overwriting any existing file of the same name. Not chunked/resumable - if
+the connection drops mid-upload the partial file is left in place, so a
+failed upload should be retried with the same name. Response:
+`{"ok":true,"file":"/audio/hello.mp3"}` or `{"ok":false,"error":"..."}`.
+
+```bash
+curl -F "file=@hello.mp3" http://<skelly-ip>/api/upload
+```
+
+Play it afterwards the same way as a clip pushed via `uploadfs`: `POST
+/api/play` with that filename.
+
 ### `POST /api/servo/zero/reset`
 ```json
 { "name": "jaw" }
@@ -99,10 +115,6 @@ calibration UI the skull's actual state after a reboot or a fresh connect.
 
 ## Not yet implemented (roadmap for the app work)
 
-- **File upload endpoint** - today, new audio clips have to be pushed via
-  `pio run --target uploadfs` over USB. A `POST /api/upload` (multipart or
-  chunked) that writes straight into LittleFS is the natural next step once
-  the app needs to push freshly-generated TTS to the skull over WiFi.
 - **Streaming playback** - for live TTS rather than pre-baked clips; see
   `docs/ARCHITECTURE.md`.
 - **Auth** - none today. Fine on a private home network; add at least a

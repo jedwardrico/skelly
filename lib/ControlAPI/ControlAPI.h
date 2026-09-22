@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <LittleFS.h>
 #include <functional>
 #include "Config.h"
 
@@ -52,10 +53,19 @@ private:
   StopCommandHandler stopHandler;
   StatusProvider statusProvider;
 
+  // State for the in-flight /api/upload request. ESPAsyncWebServer calls the
+  // upload callback repeatedly for one request at a time, so a single set of
+  // fields here is enough (no concurrent uploads expected on this device).
+  File uploadFile;
+  String uploadPath;
+  bool uploadFailed = false;
+
   void connectWifi();
   void setupRoutes();
   void handleWsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
                       AwsEventType type, void *arg, uint8_t *data, size_t len);
   void handleCommand(const JsonObject &cmd, JsonDocument &replyDoc);
   void buildStatus(JsonObject &out);
+  void handleUpload(AsyncWebServerRequest *request, String filename, size_t index,
+                     uint8_t *data, size_t len, bool final);
 };

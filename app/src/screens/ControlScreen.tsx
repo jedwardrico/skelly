@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -7,16 +8,22 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSkelly } from '../context/SkellyContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { ServoSlider } from '../components/ServoSlider';
 import { SERVO_LIST } from '../api/servoConfig';
+
+// Only extensions the firmware's AudioPlayer/upload sanitizer accept
+// (lib/AudioPlayer, lib/ControlAPI's sanitizeAudioFilename).
+const ALLOWED_EXTENSIONS = /\.(mp3|wav)$/i;
 
 export function ControlScreen() {
   const { client, status, connectionState } = useSkelly();
   const [files, setFiles] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [busyFile, setBusyFile] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const loadFiles = useCallback(async () => {
     try {
@@ -46,6 +53,30 @@ export function ControlScreen() {
     }
   };
 
+  const uploadClip = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/*'],
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+    if (!ALLOWED_EXTENSIONS.test(asset.name)) {
+      Alert.alert('Unsupported file', 'Skelly can only play .mp3 or .wav clips.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      await client.uploadFile(asset.uri, asset.name, asset.mimeType ?? 'application/octet-stream');
+      await loadFiles();
+    } catch (err) {
+      Alert.alert('Upload failed', err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -69,7 +100,16 @@ export function ControlScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>Speech clips</Text>
+      <View style={styles.clipsHeader}>
+        <Text style={styles.sectionTitle}>Speech clips</Text>
+        <Pressable
+          style={[styles.uploadButton, (uploading || connectionState !== 'connected') && styles.uploadButtonDisabled]}
+          onPress={uploadClip}
+          disabled={uploading || connectionState !== 'connected'}
+        >
+          <Text style={styles.uploadButtonText}>{uploading ? 'Uploading…' : '+ Upload clip'}</Text>
+        </Pressable>
+      </View>
       <FlatList
         data={files}
         keyExtractor={(item) => item}
@@ -77,8 +117,8 @@ export function ControlScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            No clips found. Drop .mp3/.wav files into data/audio/ and run
-            `pio run --target uploadfs`.
+            No clips found. Upload a recorded .mp3/.wav above, or drop files
+            into data/audio/ and run `pio run --target uploadfs`.
           </Text>
         }
         renderItem={({ item }) => {
@@ -112,6 +152,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16 },
   header: { alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: '#636e72', textTransform: 'uppercase', marginTop: 16, marginBottom: 8 },
+  clipsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  uploadButton: { backgroundColor: '#6c5ce7', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  uploadButtonDisabled: { backgroundColor: '#dfe6e9' },
+  uploadButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   nowPlaying: { backgroundColor: '#f5f6fa', borderRadius: 14, padding: 16 },
   nowPlayingFile: { fontSize: 18, fontWeight: '700', color: '#2d3436', marginBottom: 10 },
   jawMeterTrack: { height: 8, backgroundColor: '#dfe6e9', borderRadius: 4, overflow: 'hidden' },

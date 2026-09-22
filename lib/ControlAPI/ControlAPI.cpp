@@ -47,6 +47,28 @@ void ControlAPI::buildStatus(JsonObject &out) {
   if (statusProvider) statusProvider(out);
 }
 
+// Strips any directory components and rejects anything that isn't a plain
+// .mp3/.wav filename made of safe characters, so an upload can't escape
+// AUDIO_DIR or clobber an arbitrary LittleFS path.
+static String sanitizeAudioFilename(const String &raw) {
+  String name = raw;
+  int slash = name.lastIndexOf('/');
+  if (slash >= 0) name = name.substring(slash + 1);
+  name.trim();
+  if (name.length() == 0) return String();
+
+  String lower = name;
+  lower.toLowerCase();
+  if (!lower.endsWith(".mp3") && !lower.endsWith(".wav")) return String();
+
+  for (size_t i = 0; i < name.length(); i++) {
+    char c = name[i];
+    bool ok = isalnum((unsigned char)c) || c == '.' || c == '-' || c == '_';
+    if (!ok) return String();
+  }
+  return name;
+}
+
 void ControlAPI::setupRoutes() {
   server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest *request) {
     JsonDocument doc;
@@ -120,9 +142,69 @@ void ControlAPI::setupRoutes() {
       });
   server.addHandler(servoZeroReset_);
 
+  server.on(
+      "/api/upload", HTTP_POST,
+      [this](AsyncWebServerRequest *request) {
+        bool ok = !uploadFailed && uploadPath.length() > 0;
+        if (ok) {
+          JsonDocument doc;
+          doc["ok"] = true;
+          doc["file"] = uploadPath;
+          String body;
+          serializeJson(doc, body);
+          request->send(200, "application/json", body);
+        } else {
+          request->send(400, "application/json",
+                         "{\"ok\":false,\"error\":\"upload failed\"}");
+        }
+      },
+      [this](AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data,
+             size_t len, bool final) {
+        handleUpload(request, filename, index, data, len, final);
+      });
+
   server.onNotFound([](AsyncWebServerRequest *request) {
     request->send(404, "application/json", "{\"ok\":false,\"error\":\"not found\"}");
   });
+}
+
+void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, size_t index,
+                               uint8_t *data, size_t len, bool final) {
+  if (index == 0) {
+    uploadFailed = false;
+    uploadPath = "";
+    String safeName = sanitizeAudioFilename(filename);
+    if (safeName.isEmpty()) {
+      Serial.printf("[ControlAPI] upload rejected, bad filename \"%s\"\n", filename.c_str());
+      uploadFailed = true;
+      return;
+    }
+    if (uploadFile) uploadFile.close();
+    String path = String(AUDIO_DIR) + "/" + safeName;
+    uploadFile = LittleFS.open(path, "w");
+    if (!uploadFile) {
+      Serial.printf("[ControlAPI] upload failed to open \"%s\"\n", path.c_str());
+      uploadFailed = true;
+      return;
+    }
+    uploadPath = path;
+    Serial.printf("[ControlAPI] upload starting -> %s\n", path.c_str());
+  }
+
+  if (uploadFailed || !uploadFile) return;
+
+  if (len && uploadFile.write(data, len) != len) {
+    Serial.println("[ControlAPI] upload write failed");
+    uploadFailed = true;
+    uploadFile.close();
+    return;
+  }
+
+  if (final) {
+    uploadFile.close();
+    Serial.printf("[ControlAPI] upload complete -> %s (%u bytes)\n", uploadPath.c_str(),
+                   (unsigned)(index + len));
+  }
 }
 
 void ControlAPI::handleCommand(const JsonObject &cmd, JsonDocument &replyDoc) {
