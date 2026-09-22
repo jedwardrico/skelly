@@ -16,6 +16,10 @@ WiFi, plus on-device text-to-speech.
   engine (`expo-speech`), with rate/pitch/voice controls. Optionally
   puppeteers the skull's jaw servo in time with the phone's speech via the
   control API.
+- **Setup** - per-servo zero/rest calibration: jog a servo to where it should
+  sit at rest and save it as that servo's "zero", or reset back to the
+  firmware's default. Used by "Home all" here and by the jaw puppeteering in
+  the Speech tab.
 
 ## Why TTS plays through the phone, not the skull
 
@@ -35,13 +39,23 @@ jaw from the real waveform instead of word-boundary pulses.
 ## Project layout
 
 ```
-App.tsx                    tab shell (Connect / Control / Speech)
-src/api/skellyClient.ts    REST + WebSocket client for the control API
-src/api/servoConfig.ts     servo names/ranges, mirrors include/Config.h
-src/context/SkellyContext  shared connection + live status state
-src/screens/               one component per tab
-src/components/            small shared UI bits (connection badge, slider)
+App.tsx                             tab shell (Connect / Control / Speech / Setup)
+src/api/skellyClient.ts             REST + WebSocket client for the control API
+src/api/servoConfig.ts              servo names/ranges, mirrors include/Config.h
+src/context/SkellyContext           shared connection + live status state
+src/context/ServoCalibrationContext per-servo zero/rest overrides, persisted locally
+src/screens/                        one component per tab
+src/components/                     small shared UI bits (connection badge, slider)
 ```
+
+### Servo zero calibration
+
+The firmware's `restAngle` per servo (`include/Config.h`) is compiled in and
+has no API to change at runtime. The Setup tab's calibration is app-side
+only - stored in `AsyncStorage` on the phone - and is used wherever the app
+needs a "neutral" angle for a servo (currently: "Home all" and the jaw's
+rest position between puppeted words in the Speech tab). It does not change
+what the skull itself falls back to on boot or via `ServoController::goToRest()`.
 
 ## Getting started
 
