@@ -1,13 +1,22 @@
 #include "ServoController.h"
 
+// NVS namespace for persisted rest-angle overrides. Keys are servo names
+// (SERVO_CHANNELS[i].name, all well under the 15-char NVS key limit).
+static const char *REST_PREFS_NAMESPACE = "skelly-servo";
+
 void ServoController::begin() {
   pwm.begin();
   pwm.setPWMFreq(SERVO_PWM_FREQ_HZ);
   delay(10); // PCA9685 needs the oscillator to settle before the first write
 
+  restPrefs.begin(REST_PREFS_NAMESPACE, /*readOnly=*/false);
   for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
-    current[i] = SERVO_CHANNELS[i].restAngle;
-    target[i] = SERVO_CHANNELS[i].restAngle;
+    float restDefault = SERVO_CHANNELS[i].restAngle;
+    restOverride[i] = restPrefs.isKey(SERVO_CHANNELS[i].name)
+                           ? restPrefs.getFloat(SERVO_CHANNELS[i].name, restDefault)
+                           : restDefault;
+    current[i] = restOverride[i];
+    target[i] = restOverride[i];
     speedDegPerSec[i] = 0;
     writeChannel(SERVO_CHANNELS[i].channel, current[i]);
   }
@@ -19,6 +28,13 @@ int ServoController::channelForName(const char *name) const {
     if (strcmp(SERVO_CHANNELS[i].name, name) == 0) {
       return SERVO_CHANNELS[i].channel;
     }
+  }
+  return -1;
+}
+
+int ServoController::indexForName(const char *name) const {
+  for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
+    if (strcmp(SERVO_CHANNELS[i].name, name) == 0) return (int)i;
   }
   return -1;
 }
@@ -91,8 +107,30 @@ void ServoController::update() {
 
 void ServoController::goToRest() {
   for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
-    setTarget(SERVO_CHANNELS[i].name, SERVO_CHANNELS[i].restAngle, 90.0f);
+    setTarget(SERVO_CHANNELS[i].name, restOverride[i], 90.0f);
   }
+}
+
+float ServoController::restAngle(const char *name) const {
+  int i = indexForName(name);
+  return i < 0 ? 0 : restOverride[i];
+}
+
+bool ServoController::setRestAngle(const char *name, float angleDeg) {
+  int i = indexForName(name);
+  if (i < 0) return false;
+  float clamped = clampToRange(SERVO_CHANNELS[i].channel, angleDeg);
+  restOverride[i] = clamped;
+  restPrefs.putFloat(name, clamped);
+  return true;
+}
+
+bool ServoController::resetRestAngle(const char *name) {
+  int i = indexForName(name);
+  if (i < 0) return false;
+  restOverride[i] = SERVO_CHANNELS[i].restAngle;
+  restPrefs.remove(name);
+  return true;
 }
 
 float ServoController::currentAngle(uint8_t channel) const {

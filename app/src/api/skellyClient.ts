@@ -9,6 +9,9 @@ export interface SkellyStatus {
   file: string | null;
   jawLevel: number;
   servos: Partial<Record<ServoName, number>>;
+  // Each servo's current effective rest/"zero" angle, as persisted on the
+  // device (survives reboot) - see POST /api/servo/zero in docs/API.md.
+  servoZero: Partial<Record<ServoName, number>>;
 }
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -21,6 +24,7 @@ const DEFAULT_STATUS: SkellyStatus = {
   file: null,
   jawLevel: 0,
   servos: {},
+  servoZero: {},
 };
 
 function normalizeHost(host: string): string {
@@ -109,6 +113,7 @@ export class SkellyClient {
             file: msg.file ?? null,
             jawLevel: typeof msg.jawLevel === 'number' ? msg.jawLevel : 0,
             servos: msg.servos ?? {},
+            servoZero: msg.servoZero ?? {},
           });
         }
       } catch {
@@ -171,6 +176,7 @@ export class SkellyClient {
       file: body.file ?? null,
       jawLevel: typeof body.jawLevel === 'number' ? body.jawLevel : 0,
       servos: body.servos ?? {},
+      servoZero: body.servoZero ?? {},
     };
   }
 
@@ -198,6 +204,28 @@ export class SkellyClient {
     const body = await this.request('/api/servo', {
       method: 'POST',
       body: JSON.stringify({ name, angle }),
+    });
+    return !!body.ok;
+  }
+
+  // Persists angle as the servo's rest/"zero" position on the device itself
+  // (survives reboot). Does not move the servo.
+  async setServoZero(name: ServoName, angle: number): Promise<boolean> {
+    if (this.send({ cmd: 'setZero', name, angle })) return true;
+    const body = await this.request('/api/servo/zero', {
+      method: 'POST',
+      body: JSON.stringify({ name, angle }),
+    });
+    return !!body.ok;
+  }
+
+  // Clears a persisted zero override, reverting to the firmware's
+  // compiled-in default.
+  async resetServoZero(name: ServoName): Promise<boolean> {
+    if (this.send({ cmd: 'resetZero', name })) return true;
+    const body = await this.request('/api/servo/zero/reset', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
     });
     return !!body.ok;
   }

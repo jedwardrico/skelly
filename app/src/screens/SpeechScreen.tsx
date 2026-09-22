@@ -11,15 +11,14 @@ import {
 import * as Speech from 'expo-speech';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
-import { useServoCalibration } from '../context/ServoCalibrationContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
 
 export function SpeechScreen() {
-  const { client } = useSkelly();
-  const { getZero } = useServoCalibration();
+  const { client, status } = useSkelly();
+  const jawZero = status.servoZero.jaw ?? JAW.rest;
   const [text, setText] = useState("Hello, I'm Skelly.");
   const [voices, setVoices] = useState<Speech.Voice[]>([]);
   const [voiceId, setVoiceId] = useState<string | undefined>(undefined);
@@ -43,7 +42,7 @@ export function SpeechScreen() {
   const pulseJaw = () => {
     if (!puppetJaw) return;
     jawOpenRef.current = !jawOpenRef.current;
-    const angle = jawOpenRef.current ? JAW.max * 0.6 : getZero('jaw');
+    const angle = jawOpenRef.current ? JAW.max * 0.6 : jawZero;
     client.setServo('jaw', angle).catch(() => {});
   };
 
@@ -57,11 +56,11 @@ export function SpeechScreen() {
       onBoundary: pulseJaw,
       onDone: () => {
         setSpeaking(false);
-        if (puppetJaw) client.setServo('jaw', getZero('jaw')).catch(() => {});
+        if (puppetJaw) client.setServo('jaw', jawZero).catch(() => {});
       },
       onStopped: () => {
         setSpeaking(false);
-        if (puppetJaw) client.setServo('jaw', getZero('jaw')).catch(() => {});
+        if (puppetJaw) client.setServo('jaw', jawZero).catch(() => {});
       },
       onError: () => setSpeaking(false),
     });
@@ -70,7 +69,7 @@ export function SpeechScreen() {
   const stop = () => {
     Speech.stop();
     setSpeaking(false);
-    if (puppetJaw) client.setServo('jaw', getZero('jaw')).catch(() => {});
+    if (puppetJaw) client.setServo('jaw', jawZero).catch(() => {});
   };
 
   return (

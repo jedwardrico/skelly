@@ -34,6 +34,7 @@ export function SkellyProvider({ children }: { children: React.ReactNode }) {
     file: null,
     jawLevel: 0,
     servos: {},
+    servoZero: {},
   });
 
   const clientRef = useRef<SkellyClient>(new SkellyClient(DEFAULT_HOST));

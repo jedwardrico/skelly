@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SkellyProvider } from './src/context/SkellyContext';
-import { ServoCalibrationProvider } from './src/context/ServoCalibrationContext';
 import { ConnectScreen } from './src/screens/ConnectScreen';
 import { ControlScreen } from './src/screens/ControlScreen';
 import { SpeechScreen } from './src/screens/SpeechScreen';
@@ -43,9 +42,7 @@ function AppShell() {
 export default function App() {
   return (
     <SkellyProvider>
-      <ServoCalibrationProvider>
-        <AppShell />
-      </ServoCalibrationProvider>
+      <AppShell />
     </SkellyProvider>
   );
 }

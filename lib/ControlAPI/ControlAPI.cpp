@@ -99,6 +99,27 @@ void ControlAPI::setupRoutes() {
       });
   server.addHandler(servoHandler_);
 
+  AsyncCallbackJsonWebHandler *servoZeroSet_ = new AsyncCallbackJsonWebHandler(
+      "/api/servo/zero", [this](AsyncWebServerRequest *request, JsonVariant &json) {
+        JsonObject obj = json.as<JsonObject>();
+        String name = obj["name"] | "";
+        float angle = obj["angle"] | NAN;
+        bool ok = name.length() && !isnan(angle) && servoZeroSetHandler && servoZeroSetHandler(name, angle);
+        request->send(ok ? 200 : 400, "application/json",
+                      ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"set zero failed\"}");
+      });
+  server.addHandler(servoZeroSet_);
+
+  AsyncCallbackJsonWebHandler *servoZeroReset_ = new AsyncCallbackJsonWebHandler(
+      "/api/servo/zero/reset", [this](AsyncWebServerRequest *request, JsonVariant &json) {
+        JsonObject obj = json.as<JsonObject>();
+        String name = obj["name"] | "";
+        bool ok = name.length() && servoZeroResetHandler && servoZeroResetHandler(name);
+        request->send(ok ? 200 : 400, "application/json",
+                      ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"reset zero failed\"}");
+      });
+  server.addHandler(servoZeroReset_);
+
   server.onNotFound([](AsyncWebServerRequest *request) {
     request->send(404, "application/json", "{\"ok\":false,\"error\":\"not found\"}");
   });
@@ -127,6 +148,19 @@ void ControlAPI::handleCommand(const JsonObject &cmd, JsonDocument &replyDoc) {
     (void)speed; // eased moves go through /api/servo with speed once exposed on ServoController target API
     reply["type"] = "ack";
     reply["cmd"] = "servo";
+    reply["ok"] = ok;
+  } else if (type == "setZero") {
+    String name = cmd["name"] | "";
+    float angle = cmd["angle"] | NAN;
+    bool ok = name.length() && !isnan(angle) && servoZeroSetHandler && servoZeroSetHandler(name, angle);
+    reply["type"] = "ack";
+    reply["cmd"] = "setZero";
+    reply["ok"] = ok;
+  } else if (type == "resetZero") {
+    String name = cmd["name"] | "";
+    bool ok = name.length() && servoZeroResetHandler && servoZeroResetHandler(name);
+    reply["type"] = "ack";
+    reply["cmd"] = "resetZero";
     reply["ok"] = ok;
   } else if (type == "status") {
     reply["type"] = "status";

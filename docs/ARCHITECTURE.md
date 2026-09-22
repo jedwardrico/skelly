@@ -25,7 +25,11 @@
   addressed by name (`SERVO_CHANNELS` in `include/Config.h`), each with its
   own min/max/rest angle. `setAngle()` jumps instantly; `setTarget()` eases
   toward an angle at a given speed, advanced every `loop()` via `update()` so
-  moves never block.
+  moves never block. A servo's rest/"zero" angle can be overridden at
+  runtime with `setRestAngle()`, persisted to flash (NVS) so it survives
+  reboot without recompiling `Config.h`; `resetRestAngle()` clears the
+  override. `goToRest()` and status reporting always use the current
+  effective rest angle (override if set, else the compiled-in default).
 
 - **AudioPlayer** - wraps `ESP8266Audio`'s I2S output for the MAX98357A.
   Plays `.mp3`/`.wav` files from LittleFS by path. A custom

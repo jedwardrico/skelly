@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
-import { useServoCalibration } from '../context/ServoCalibrationContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
 import type { ServoName } from '../api/skellyClient';
 
 function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: string; min: number; max: number }) {
   const { client, status } = useSkelly();
-  const { getZero, setZero, resetZero, isOverridden } = useServoCalibration();
   const [jogValue, setJogValue] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const reported = status.servos[name];
-  const zero = getZero(name);
+  const zero = status.servoZero[name] ?? (min + max) / 2;
+  const defaultZero = SERVO_LIST.find((s) => s.name === name)?.rest ?? zero;
+  const isOverridden = Math.abs(zero - defaultZero) > 0.5;
   const displayValue = jogValue ?? reported ?? zero;
 
   return (
@@ -21,7 +22,7 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
       <View style={styles.rowHeader}>
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.zeroText}>
-          zero: {Math.round(zero)}°{isOverridden(name) ? '' : ' (default)'}
+          zero: {Math.round(zero)}°{isOverridden ? '' : ' (default)'}
         </Text>
       </View>
 
@@ -42,20 +43,39 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
 
       <View style={styles.buttonRow}>
         <Pressable
-          style={styles.setButton}
-          onPress={() => {
+          style={[styles.setButton, saving && styles.buttonDisabled]}
+          disabled={saving}
+          onPress={async () => {
             const angle = jogValue ?? reported ?? zero;
-            setZero(name, angle);
+            setSaving(true);
+            try {
+              const ok = await client.setServoZero(name, angle);
+              if (!ok) Alert.alert('Failed to save zero', `Could not persist ${label}'s zero on the skull.`);
+            } catch (err) {
+              Alert.alert('Failed to save zero', String(err));
+            } finally {
+              setSaving(false);
+            }
           }}
         >
           <Text style={styles.setButtonText}>Set current as zero</Text>
         </Pressable>
         <Pressable
-          style={[styles.resetButton, !isOverridden(name) && styles.resetButtonDisabled]}
-          disabled={!isOverridden(name)}
-          onPress={() => resetZero(name)}
+          style={[styles.resetButton, (!isOverridden || saving) && styles.resetButtonDisabled]}
+          disabled={!isOverridden || saving}
+          onPress={async () => {
+            setSaving(true);
+            try {
+              const ok = await client.resetServoZero(name);
+              if (!ok) Alert.alert('Failed to reset zero', `Could not reset ${label}'s zero on the skull.`);
+            } catch (err) {
+              Alert.alert('Failed to reset zero', String(err));
+            } finally {
+              setSaving(false);
+            }
+          }}
         >
-          <Text style={[styles.resetButtonText, !isOverridden(name) && styles.resetButtonTextDisabled]}>
+          <Text style={[styles.resetButtonText, !isOverridden && styles.resetButtonTextDisabled]}>
             Reset
           </Text>
         </Pressable>
@@ -65,13 +85,12 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
 }
 
 export function ServoConfigScreen() {
-  const { client } = useSkelly();
-  const { getZero } = useServoCalibration();
+  const { client, status } = useSkelly();
 
   const homeAll = () => {
-    Promise.all(SERVO_LIST.map((s) => client.setServo(s.name, getZero(s.name)))).catch(() =>
-      Alert.alert('Failed to move one or more servos home'),
-    );
+    Promise.all(
+      SERVO_LIST.map((s) => client.setServo(s.name, status.servoZero[s.name] ?? s.rest)),
+    ).catch(() => Alert.alert('Failed to move one or more servos home'));
   };
 
   return (
@@ -83,10 +102,9 @@ export function ServoConfigScreen() {
       <Text style={styles.sectionTitle}>Servo zero calibration</Text>
       <Text style={styles.hint}>
         Jog a servo to where it should sit at rest, then "Set current as
-        zero". This is stored on this phone only - it doesn't change the
-        firmware's compiled-in restAngle (include/Config.h), so "Home all"
-        below is the app's own idea of neutral, used for its puppeteering
-        features.
+        zero". This is persisted on the skull itself (flash/NVS via
+        `POST /api/servo/zero`), so it survives reboots and applies no
+        matter which phone or app connects - see docs/API.md.
       </Text>
 
       {SERVO_LIST.map((servo) => (
@@ -115,6 +133,7 @@ const styles = StyleSheet.create({
   buttonRow: { flexDirection: 'row', gap: 10 },
   setButton: { flex: 1, backgroundColor: '#6c5ce7', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   setButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  buttonDisabled: { opacity: 0.5 },
   resetButton: { paddingHorizontal: 16, borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: '#dfe6e9' },
   resetButtonDisabled: { backgroundColor: '#f0f1f5' },
   resetButtonText: { color: '#2d3436', fontWeight: '700', fontSize: 13 },
