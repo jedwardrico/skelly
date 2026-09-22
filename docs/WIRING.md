@@ -41,8 +41,11 @@ Plug servos into channels 0-4 (or however many you use) matching the
 | 0       | `jaw`       | Jaw hinge          |
 | 1       | `neck_pan`  | Neck left/right    |
 | 2       | `neck_tilt` | Neck up/down       |
-| 3       | `eye_l`     | Left eye           |
-| 4       | `eye_r`     | Right eye          |
+| 3       | `eye_pan`   | Eyes left/right (both eyes, shared servo) |
+| 4       | `eye_tilt`  | Eyes up/down (both eyes, shared servo)    |
+
+The two eyeballs are mechanically linked (a single yoke/linkage), so each axis
+moves both eyes together — there's no independent per-eye servo.
 
 Add/remove rows in `SERVO_CHANNELS` (and this table) to match your rig; the
 firmware sizes every internal array off `SERVO_CHANNEL_COUNT` automatically.

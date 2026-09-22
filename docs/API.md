@@ -16,7 +16,7 @@ WiFi - see `include/Secrets.h.example`).
   "playing": true,
   "file": "/audio/hello.mp3",
   "jawLevel": 0.42,
-  "servos": { "jaw": 23.1, "neck_pan": 90, "neck_tilt": 90, "eye_l": 90, "eye_r": 90 }
+  "servos": { "jaw": 23.1, "neck_pan": 90, "neck_tilt": 90, "eye_pan": 90, "eye_tilt": 90 }
 }
 ```
 
