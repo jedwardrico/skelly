@@ -73,7 +73,7 @@ extension).
 - [x] WiFi JSON/WebSocket control API
 - [x] React Native app consuming the control API, with on-device TTS
   (see [`app/README.md`](app/README.md))
-- [ ] File upload endpoint for pushing new clips over WiFi instead of USB
+- [x] File upload endpoint for pushing new clips over WiFi instead of USB
 - [ ] BluePad32 + 8BitDo Ultimate controller support
   (see [`docs/BLUEPAD32.md`](docs/BLUEPAD32.md) for what's already
   scaffolded and what's left)

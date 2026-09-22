@@ -10,8 +10,10 @@ WiFi, plus on-device text-to-speech.
   fallback AP). Connection state and live status stream over the `/ws`
   WebSocket, REST is used as a fallback (see `../docs/API.md`).
 - **Control** - see what's playing and the live jaw level, play/stop the
-  speech clips already on the skull's LittleFS (`data/audio/`), and jog the
-  jaw/neck/eye servos with sliders.
+  speech clips already on the skull's LittleFS (`data/audio/`), upload a
+  recorded `.mp3`/`.wav` clip from the phone straight to the skull over WiFi
+  (`POST /api/upload`, no USB/`uploadfs` needed), and jog the jaw/neck/eye
+  servos with sliders.
 - **Speech** - type text and speak it with the phone's own text-to-speech
   engine (`expo-speech`), with rate/pitch/voice controls. Optionally
   puppeteers the skull's jaw servo in time with the phone's speech via the
@@ -25,17 +27,20 @@ WiFi, plus on-device text-to-speech.
 ## Why TTS plays through the phone, not the skull
 
 The firmware only plays pre-baked `.mp3`/`.wav` files today - there's no
-endpoint yet for streaming freshly-generated audio to the skull's MAX98357A
-amp, and no upload endpoint for pushing new clips over WiFi (both are
-tracked in `../docs/API.md` and `../docs/ARCHITECTURE.md`'s roadmap
-sections). Until then, this is the practical way to get "type text, hear it
-out loud with a moving jaw": the phone does the talking, the skull just
-puppets along.
+endpoint yet for streaming freshly-generated audio straight to the skull's
+MAX98357A amp (tracked in `../docs/API.md` and `../docs/ARCHITECTURE.md`'s
+roadmap sections). An upload endpoint (`POST /api/upload`, used by the
+Control tab's "Upload clip" button) does exist for pushing an
+already-recorded clip over WiFi, but on-device TTS output can't be captured
+as a file to upload, so live typed speech still plays from the phone with
+the jaw puppeted along - see the Control tab's upload button if you'd rather
+record a line yourself and have the skull play it directly.
 
-Once an upload/streaming endpoint exists, the natural upgrade is: synthesize
-audio (on-device or via a cloud TTS API), push it to the skull, and let the
-existing audio-envelope jaw sync (`lib/AudioPlayer/JawSyncOutput`) drive the
-jaw from the real waveform instead of word-boundary pulses.
+Once a streaming endpoint exists, the natural upgrade for the Speech tab is
+to synthesize audio (on-device or via a cloud TTS API), push it to the
+skull, and let the existing audio-envelope jaw sync
+(`lib/AudioPlayer/JawSyncOutput`) drive the jaw from the real waveform
+instead of word-boundary pulses.
 
 ## Project layout
 
