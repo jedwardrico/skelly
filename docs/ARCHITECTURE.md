@@ -3,7 +3,7 @@
 ```
                          +--------------------+
                          |  React Native app  |
-                         |   / web page (WIP) |
+                         |      (app/)        |
                          +---------+----------+
                                    | WiFi: REST + WebSocket JSON
                                    v
@@ -66,18 +66,23 @@
 ## Where the app/web control layer fits in (roadmap)
 
 The control API is deliberately app-agnostic: it's plain JSON over WebSocket
-and REST, so a React Native app, a browser page, or `curl` can all drive it
-identically. Two speech pipelines are worth planning for:
+and REST, so the React Native app (`app/`), a browser page, or `curl` can all
+drive it identically. Three speech pipelines are worth planning for:
 
 1. **Pre-baked clips (supported today)**: app/cloud generates or picks a
    speech `.mp3`/`.wav`, gets it onto the device (e.g. an HTTP upload
    endpoint - not yet implemented, see `docs/API.md`'s TODO) into
    `data/audio/` or uploaded to LittleFS at runtime, then triggers it with
    `play`.
-2. **Live streaming TTS (future)**: would need a streaming I2S write path
-   instead of `AudioGenerator::begin()`/`loop()` against a file source -
-   noted as a roadmap item rather than built now, since it's a materially
-   different audio pipeline.
+2. **Phone-side TTS (supported today, in `app/`)**: the app speaks typed
+   text with the phone's own on-device TTS engine and, over the same control
+   API, puppets the jaw servo in time with it. The audio comes from the
+   phone's speaker, not the skull's amp - see `app/README.md`.
+3. **Live streaming TTS to the skull (future)**: would need a streaming I2S
+   write path instead of `AudioGenerator::begin()`/`loop()` against a file
+   source - noted as a roadmap item rather than built now, since it's a
+   materially different audio pipeline. Once it exists, the app's TTS
+   pipeline is the natural thing to route through it instead of (2).
 
 ## Where BluePad32 fits in (roadmap)
 
