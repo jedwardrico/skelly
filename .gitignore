@@ -1,0 +1,9 @@
+.pio/
+.vscode/
+.DS_Store
+include/Secrets.h
+
+# Audio assets are large/binary and often not license-clean to commit;
+# keep the folder structure but not its contents.
+data/audio/*
+!data/audio/.gitkeep
