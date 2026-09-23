@@ -2,7 +2,8 @@
 
 Animatronic talking skeleton, driven by an ESP32.
 
-- Servos (via a PCA9685) move the jaw, neck, and eyes.
+- Servos (direct GPIO, via a Freenove breakout board) move the jaw, neck, and
+  eyes.
 - A MAX98357A I2S amplifier plays speech clips, and the jaw is driven live
   off the audio's own volume envelope - no pre-baked mouth timing needed.
 - A WiFi JSON/WebSocket control API is the integration point for the
@@ -15,7 +16,7 @@ Animatronic talking skeleton, driven by an ESP32.
 ## Hardware
 
 - ESP32 dev board (ESP32-WROOM-32 recommended)
-- PCA9685 16-channel PWM/servo driver
+- Freenove breakout board (terminal-block servo/power breakout, no PCA9685)
 - MAX98357A I2S mono amplifier + small speaker
 - 3-5+ hobby servos for jaw/neck/eyes
 - 5V supply for servos and amp, separate from the ESP32's own power
@@ -30,7 +31,7 @@ platformio.ini             two envs: esp32dev (default, builds today) and
 include/Config.h            all pins + named servo channel table
 include/Secrets.h.example   copy to Secrets.h and fill in WiFi creds
 src/main.cpp                wires the modules together
-lib/ServoController/        PCA9685 servo control, by name, non-blocking moves
+lib/ServoController/        direct-GPIO servo control, by name, non-blocking moves
 lib/AudioPlayer/            MAX98357A I2S playback + audio-envelope jaw sync
 lib/ControlAPI/             WiFi + REST/WebSocket JSON control surface
 lib/GamepadController/      BluePad32 scaffold (compiles to nothing by default)
@@ -68,7 +69,7 @@ extension).
 
 ## Roadmap
 
-- [x] Servo control (PCA9685, named channels, non-blocking eased moves)
+- [x] Servo control (direct GPIO, named channels, non-blocking eased moves)
 - [x] Speech playback (MAX98357A, MP3/WAV, audio-synced jaw)
 - [x] WiFi JSON/WebSocket control API
 - [x] React Native app consuming the control API, with on-device TTS

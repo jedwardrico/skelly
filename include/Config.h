@@ -4,17 +4,15 @@
 #include "Secrets.h"
 
 // ---------------------------------------------------------------------------
-// I2C bus (PCA9685 16-channel servo driver)
+// Servo PWM (direct ESP32 GPIO, wired through the Freenove breakout board's
+// terminal blocks - no PCA9685 or other I2C PWM driver involved)
 // ---------------------------------------------------------------------------
-#define I2C_SDA_PIN 21
-#define I2C_SCL_PIN 22
-#define PCA9685_I2C_ADDRESS 0x40
 #define SERVO_PWM_FREQ_HZ 50
 
-// Pulse length range (12-bit, 0-4095 @ 50Hz) for a typical analog hobby servo.
+// Pulse width range, in microseconds, for a typical analog hobby servo.
 // Recalibrate per-servo if yours buzzes or doesn't reach its full range.
-#define SERVO_PULSE_MIN 102 // ~0.5ms
-#define SERVO_PULSE_MAX 512 // ~2.5ms
+#define SERVO_PULSE_MIN_US 500
+#define SERVO_PULSE_MAX_US 2500
 
 // ---------------------------------------------------------------------------
 // I2S bus (MAX98357A amplifier). Chosen to avoid the I2C pins above.
@@ -28,24 +26,27 @@
 #define I2S_AMP_ENABLE_PIN 14
 
 // ---------------------------------------------------------------------------
-// Named servo channels on the PCA9685. Add/remove entries to match your
-// skull's rig; everything else in the firmware (control API, gamepad
-// scaffold) resolves servos by name through this table.
+// Named servo channels, each driven straight off an ESP32 GPIO pin broken
+// out on the Freenove breakout board's terminal blocks. Add/remove entries
+// to match your skull's rig; everything else in the firmware (control API,
+// gamepad scaffold) resolves servos by name through this table. Pick pins
+// that avoid the I2S bus above, UART0 (0/1/3), the flash pins (6-11), and
+// the strapping pins (0/2/5/12/15).
 // ---------------------------------------------------------------------------
 struct ServoChannelDef {
   const char *name;
-  uint8_t channel;
+  uint8_t pin;
   float minAngle;
   float maxAngle;
   float restAngle;
 };
 
 static const ServoChannelDef SERVO_CHANNELS[] = {
-    {"jaw", 0, 0, 55, 0},
-    {"neck_pan", 1, 30, 150, 90},
-    {"neck_tilt", 2, 60, 120, 90},
-    {"eye_pan", 3, 60, 120, 90},
-    {"eye_tilt", 4, 60, 120, 90},
+    {"jaw", 13, 0, 55, 0},
+    {"neck_pan", 16, 30, 150, 90},
+    {"neck_tilt", 17, 60, 120, 90},
+    {"eye_pan", 18, 60, 120, 90},
+    {"eye_tilt", 19, 60, 120, 90},
 };
 static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_CHANNELS[0]);
 

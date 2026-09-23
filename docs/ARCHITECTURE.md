@@ -8,7 +8,7 @@
                                    | WiFi: REST + WebSocket JSON
                                    v
 +------------------+     +--------------------+     +-------------------+
-| 8BitDo Ultimate   |     |   ESP32 firmware   |     |   PCA9685 (I2C)   |
+| 8BitDo Ultimate   |     |   ESP32 firmware   |     | Freenove breakout |
 | controller        +---->  (this repo)        +----->  -> servos       |
 | (BluePad32, WIP)  |     |                    |     |  jaw/neck/eyes   |
 +-------------------+     |  ServoController   |     +-------------------+
@@ -21,15 +21,18 @@
 
 ## Modules (`lib/`)
 
-- **ServoController** - wraps the Adafruit PCA9685 driver. Servos are
-  addressed by name (`SERVO_CHANNELS` in `include/Config.h`), each with its
-  own min/max/rest angle. `setAngle()` jumps instantly; `setTarget()` eases
-  toward an angle at a given speed, advanced every `loop()` via `update()` so
-  moves never block. A servo's rest/"zero" angle can be overridden at
-  runtime with `setRestAngle()`, persisted to flash (NVS) so it survives
-  reboot without recompiling `Config.h`; `resetRestAngle()` clears the
-  override. `goToRest()` and status reporting always use the current
-  effective rest angle (override if set, else the compiled-in default).
+- **ServoController** - drives each servo straight off its own ESP32 GPIO
+  pin (via the `ESP32Servo` library), wired through the Freenove breakout
+  board's terminal blocks - no PCA9685 or other I2C PWM driver involved.
+  Servos are addressed by name (`SERVO_CHANNELS` in `include/Config.h`),
+  each with its own min/max/rest angle. `setAngle()` jumps instantly;
+  `setTarget()` eases toward an angle at a given speed, advanced every
+  `loop()` via `update()` so moves never block. A servo's rest/"zero" angle
+  can be overridden at runtime with `setRestAngle()`, persisted to flash
+  (NVS) so it survives reboot without recompiling `Config.h`;
+  `resetRestAngle()` clears the override. `goToRest()` and status reporting
+  always use the current effective rest angle (override if set, else the
+  compiled-in default).
 
 - **AudioPlayer** - wraps `ESP8266Audio`'s I2S output for the MAX98357A.
   Plays `.mp3`/`.wav` files from LittleFS by path. A custom
