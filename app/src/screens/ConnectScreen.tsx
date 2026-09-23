@@ -31,7 +31,7 @@ export function ConnectScreen() {
           style={[styles.input, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
           value={draft}
           onChangeText={setDraft}
-          placeholder="192.168.1.42 or 192.168.4.1"
+          placeholder="192.168.1.113"
           placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
           autoCorrect={false}
@@ -39,7 +39,7 @@ export function ConnectScreen() {
         />
         <Text style={[styles.hint, { color: colors.textMuted }]}>
           Find this in the ESP32's serial monitor after boot, or use{' '}
-          <Text style={styles.mono}>192.168.4.1</Text> if it's hosting its own
+          <Text style={styles.mono}>192.168.1.113</Text> if it's hosting its own
           Skelly-Setup WiFi network.
         </Text>
         <Pressable

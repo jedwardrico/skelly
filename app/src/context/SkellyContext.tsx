@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SkellyClient, SkellyStatus, ConnectionState } from '../api/skellyClient';
 
 const HOST_STORAGE_KEY = 'skelly:host';
-const DEFAULT_HOST = '192.168.4.1'; // Skelly's own fallback AP, see include/Secrets.h.example
+const DEFAULT_HOST = '192.168.1.113'; // Skelly on the home network (fallback AP 192.168.1.113)
 
 interface SkellyContextValue {
   host: string;

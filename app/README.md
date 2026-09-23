@@ -6,7 +6,7 @@ WiFi, plus on-device text-to-speech.
 ## What it does
 
 - **Connect** - point the app at the skull's IP (shown on the ESP32's serial
-  monitor at boot, or `192.168.4.1` if it's hosting its own `Skelly-Setup`
+  monitor at boot, or `192.168.1.113` if it's hosting its own `Skelly-Setup`
   fallback AP). Connection state and live status stream over the `/ws`
   WebSocket, REST is used as a fallback (see `../docs/API.md`).
 - **Control** - see what's playing and the live jaw level, play/stop the
