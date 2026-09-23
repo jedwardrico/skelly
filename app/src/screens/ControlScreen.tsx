@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useSkelly } from '../context/SkellyContext';
+import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { ServoSlider } from '../components/ServoSlider';
 import { SERVO_LIST } from '../api/servoConfig';
@@ -20,6 +21,7 @@ const ALLOWED_EXTENSIONS = /\.(mp3|wav)$/i;
 
 export function ControlScreen() {
   const { client, status, connectionState } = useSkelly();
+  const { colors } = useTheme();
   const [files, setFiles] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [busyFile, setBusyFile] = useState<string | null>(null);
@@ -78,21 +80,21 @@ export function ControlScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <ConnectionBadge />
       </View>
 
-      <View style={styles.nowPlaying}>
-        <Text style={styles.sectionTitle}>Now playing</Text>
-        <Text style={styles.nowPlayingFile}>
+      <View style={[styles.nowPlaying, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Now playing</Text>
+        <Text style={[styles.nowPlayingFile, { color: colors.textPrimary }]}>
           {status.playing ? status.file ?? 'unknown clip' : '— nothing —'}
         </Text>
-        <View style={styles.jawMeterTrack}>
-          <View style={[styles.jawMeterFill, { width: `${Math.round(status.jawLevel * 100)}%` }]} />
+        <View style={[styles.jawMeterTrack, { backgroundColor: colors.border }]}>
+          <View style={[styles.jawMeterFill, { width: `${Math.round(status.jawLevel * 100)}%`, backgroundColor: colors.accent }]} />
         </View>
         <Pressable
-          style={[styles.stopButton, !status.playing && styles.stopButtonDisabled]}
+          style={[styles.stopButton, { backgroundColor: colors.danger }, !status.playing && { backgroundColor: colors.disabled }]}
           disabled={!status.playing}
           onPress={() => client.stop()}
         >
@@ -101,9 +103,13 @@ export function ControlScreen() {
       </View>
 
       <View style={styles.clipsHeader}>
-        <Text style={styles.sectionTitle}>Speech clips</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Speech clips</Text>
         <Pressable
-          style={[styles.uploadButton, (uploading || connectionState !== 'connected') && styles.uploadButtonDisabled]}
+          style={[
+            styles.uploadButton,
+            { backgroundColor: colors.accent },
+            (uploading || connectionState !== 'connected') && { backgroundColor: colors.disabled },
+          ]}
           onPress={uploadClip}
           disabled={uploading || connectionState !== 'connected'}
         >
@@ -116,7 +122,7 @@ export function ControlScreen() {
         style={styles.fileList}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={
-          <Text style={styles.empty}>
+          <Text style={[styles.empty, { color: colors.textMuted }]}>
             No clips found. Upload a recorded .mp3/.wav above, or drop files
             into data/audio/ and run `pio run --target uploadfs`.
           </Text>
@@ -125,20 +131,30 @@ export function ControlScreen() {
           const isActive = status.playing && status.file === item;
           return (
             <Pressable
-              style={[styles.fileRow, isActive && styles.fileRowActive]}
+              style={[
+                styles.fileRow,
+                { backgroundColor: colors.surface },
+                isActive && { backgroundColor: colors.surfaceAlt },
+              ]}
               onPress={() => play(item)}
               disabled={busyFile === item}
             >
-              <Text style={[styles.fileName, isActive && styles.fileNameActive]}>
+              <Text
+                style={[
+                  styles.fileName,
+                  { color: colors.textPrimary },
+                  isActive && { color: colors.accent, fontWeight: '700' },
+                ]}
+              >
                 {item.replace(/^\/?audio\//, '')}
               </Text>
-              <Text style={styles.filePlay}>{isActive ? '▶ playing' : '▶ play'}</Text>
+              <Text style={[styles.filePlay, { color: colors.textSecondary }]}>{isActive ? '▶ playing' : '▶ play'}</Text>
             </Pressable>
           );
         }}
       />
 
-      <Text style={styles.sectionTitle}>Manual servo control</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Manual servo control</Text>
       <View style={styles.servoList}>
         {SERVO_LIST.map((servo) => (
           <ServoSlider key={servo.name} name={servo.name} label={servo.label} min={servo.min} max={servo.max} />
@@ -149,35 +165,30 @@ export function ControlScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
+  container: { flex: 1, padding: 16 },
   header: { alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#636e72', textTransform: 'uppercase', marginTop: 16, marginBottom: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', marginTop: 16, marginBottom: 8 },
   clipsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  uploadButton: { backgroundColor: '#6c5ce7', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  uploadButtonDisabled: { backgroundColor: '#dfe6e9' },
+  uploadButton: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   uploadButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  nowPlaying: { backgroundColor: '#f5f6fa', borderRadius: 14, padding: 16 },
-  nowPlayingFile: { fontSize: 18, fontWeight: '700', color: '#2d3436', marginBottom: 10 },
-  jawMeterTrack: { height: 8, backgroundColor: '#dfe6e9', borderRadius: 4, overflow: 'hidden' },
-  jawMeterFill: { height: '100%', backgroundColor: '#6c5ce7' },
-  stopButton: { marginTop: 14, backgroundColor: '#e74c3c', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  stopButtonDisabled: { backgroundColor: '#dfe6e9' },
+  nowPlaying: { borderRadius: 14, padding: 16 },
+  nowPlayingFile: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  jawMeterTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  jawMeterFill: { height: '100%' },
+  stopButton: { marginTop: 14, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   stopButtonText: { color: '#fff', fontWeight: '700' },
   fileList: { maxHeight: 180 },
-  empty: { color: '#95a5a6', fontSize: 13, paddingVertical: 8 },
+  empty: { fontSize: 13, paddingVertical: 8 },
   fileRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: '#f5f6fa',
     borderRadius: 10,
     marginBottom: 8,
   },
-  fileRowActive: { backgroundColor: '#e8e3ff' },
-  fileName: { fontSize: 15, color: '#2d3436', fontWeight: '500' },
-  fileNameActive: { color: '#6c5ce7', fontWeight: '700' },
-  filePlay: { fontSize: 13, color: '#636e72' },
+  fileName: { fontSize: 15, fontWeight: '500' },
+  filePlay: { fontSize: 13 },
   servoList: { paddingBottom: 24 },
 });

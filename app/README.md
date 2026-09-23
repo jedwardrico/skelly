@@ -22,7 +22,8 @@ WiFi, plus on-device text-to-speech.
   sit at rest and save it as that servo's "zero" (persisted on the skull
   itself via `POST /api/servo/zero`, survives reboot), or reset back to the
   firmware's compiled-in default. Used by "Home all" here and by the jaw
-  puppeteering in the Speech tab.
+  puppeteering in the Speech tab. Also has the dark mode toggle - the app
+  defaults to dark, and the choice is remembered locally (`AsyncStorage`).
 
 ## Why TTS plays through the phone, not the skull
 
@@ -49,6 +50,7 @@ App.tsx                    tab shell (Connect / Control / Speech / Setup)
 src/api/skellyClient.ts    REST + WebSocket client for the control API
 src/api/servoConfig.ts     servo names/ranges, mirrors include/Config.h
 src/context/SkellyContext  shared connection + live status state (incl. servoZero)
+src/theme/                  dark/light color palettes + theme context (dark by default)
 src/screens/                one component per tab
 src/components/             small shared UI bits (connection badge, slider)
 ```
