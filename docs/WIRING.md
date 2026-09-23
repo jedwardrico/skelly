@@ -1,9 +1,18 @@
 # Wiring
 
-Target board: a standard ESP32-WROOM-32 dev module (any "ESP32 Dev Kit" style
-board). It's the safest default because it's the board BluePad32 and its
-examples target most directly, and it has both classic Bluetooth and BLE for
-whatever controller/protocol the 8BitDo Ultimate ends up pairing with.
+Target board: an ESP32-WROVER dev module (any "ESP32 Dev Kit" style board
+built around WROVER instead of WROOM). It's the default because it adds
+PSRAM and more flash than WROOM - headroom for a bigger LittleFS audio
+library now, and enough spare GPIOs/PSRAM to wire up an OV2640-style camera
+module later. It's still the same ESP32 chip BluePad32 targets, with both
+classic Bluetooth and BLE for whatever controller/protocol the 8BitDo
+Ultimate ends up pairing with.
+
+If your WROVER module is an original (non-"B"/"E") revision, GPIO 16 and 17
+are reserved for the module's PSRAM and unavailable as GPIO - move
+`neck_pan`/`neck_tilt` off those pins in `include/Config.h` (and the table
+below) if so. Nearly all WROVER modules sold today are WROVER-B/-E, which
+free GPIO 16/17 for normal use, so the default wiring below assumes that.
 
 All pin numbers below live in `include/Config.h` — change them there, not in
 code, if your wiring differs.
@@ -82,7 +91,9 @@ Chosen specifically so the servo pins and the I2S bus don't share any pins:
   (eye_pan), GPIO 19 (eye_tilt)
 - I2S (MAX98357A): GPIO 26 (BCLK), GPIO 25 (LRC), GPIO 27 (DIN), GPIO 14 (amp enable, optional)
 
-GPIO 13/16-19/25-27 are all safe general-purpose pins on the WROOM-32 module
-(no strapping/flash conflicts). If you move things around, avoid GPIO 6-11
-(connected to the module's internal flash) and treat GPIO 0/2/5/12/15 as
-strapping pins to leave alone unless you know what you're doing with them.
+GPIO 13/16-19/25-27 are all safe general-purpose pins on a WROVER-B/-E
+module (no strapping/flash/PSRAM conflicts). If you move things around,
+avoid GPIO 6-11 (connected to the module's internal flash), treat GPIO
+0/2/5/12/15 as strapping pins to leave alone unless you know what you're
+doing with them, and - on an original (non-B/E) WROVER only - avoid GPIO
+16/17, which that revision reserves for PSRAM.

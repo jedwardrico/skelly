@@ -15,7 +15,8 @@ Animatronic talking skeleton, driven by an ESP32.
 
 ## Hardware
 
-- ESP32 dev board (ESP32-WROOM-32 recommended)
+- ESP32 dev board (ESP32-WROVER recommended - PSRAM and more flash than
+  WROOM, with GPIO headroom to add a camera module later)
 - Freenove breakout board (terminal-block servo/power breakout, no PCA9685)
 - MAX98357A I2S mono amplifier + small speaker
 - 3-5+ hobby servos for jaw/neck/eyes
