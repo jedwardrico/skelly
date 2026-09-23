@@ -1,13 +1,14 @@
 #pragma once
 
-#include <Adafruit_PWMServoDriver.h>
+#include <ESP32Servo.h>
 #include <Preferences.h>
 #include "Config.h"
 
-// Drives every servo on the PCA9685 by name (see SERVO_CHANNELS in Config.h).
-// Moves are non-blocking: call setTarget() to start a move and update() every
-// loop() to advance it, so servo motion never stalls audio playback or the
-// control API.
+// Drives every servo directly off its own ESP32 GPIO pin (see SERVO_CHANNELS
+// in Config.h), wired through the Freenove breakout board's terminal blocks -
+// no PCA9685 or other I2C PWM driver in the loop. Moves are non-blocking:
+// call setTarget() to start a move and update() every loop() to advance it,
+// so servo motion never stalls audio playback or the control API.
 class ServoController {
 public:
   void begin();
@@ -18,7 +19,7 @@ public:
   // Instant jump, no easing. Used by the jaw sync since it already gets a
   // smooth signal from the audio envelope follower.
   bool setAngle(const char *name, float angleDeg);
-  bool setAngle(uint8_t channel, float angleDeg);
+  bool setAngle(int index, float angleDeg);
 
   // Eased move toward angleDeg at speedDegPerSec. speedDegPerSec <= 0 means
   // instant (equivalent to setAngle).
@@ -41,11 +42,11 @@ public:
   // default. Does not move the servo.
   bool resetRestAngle(const char *name);
 
-  int channelForName(const char *name) const;
-  float currentAngle(uint8_t channel) const;
+  int indexForName(const char *name) const;
+  float currentAngle(int index) const;
 
 private:
-  Adafruit_PWMServoDriver pwm{PCA9685_I2C_ADDRESS};
+  Servo servoDrivers[SERVO_CHANNEL_COUNT];
   Preferences restPrefs;
   float current[SERVO_CHANNEL_COUNT] = {0};
   float target[SERVO_CHANNEL_COUNT] = {0};
@@ -53,8 +54,7 @@ private:
   float restOverride[SERVO_CHANNEL_COUNT] = {0};
   uint32_t lastUpdateMs = 0;
 
-  uint16_t angleToPulse(uint8_t channel, float angleDeg) const;
-  float clampToRange(uint8_t channel, float angleDeg) const;
-  void writeChannel(uint8_t channel, float angleDeg);
-  int indexForName(const char *name) const;
+  uint16_t angleToPulseUs(int index, float angleDeg) const;
+  float clampToRange(int index, float angleDeg) const;
+  void writeIndex(int index, float angleDeg);
 };

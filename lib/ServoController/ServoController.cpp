@@ -5,12 +5,11 @@
 static const char *REST_PREFS_NAMESPACE = "skelly-servo";
 
 void ServoController::begin() {
-  pwm.begin();
-  pwm.setPWMFreq(SERVO_PWM_FREQ_HZ);
-  delay(10); // PCA9685 needs the oscillator to settle before the first write
-
   restPrefs.begin(REST_PREFS_NAMESPACE, /*readOnly=*/false);
   for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
+    servoDrivers[i].setPeriodHertz(SERVO_PWM_FREQ_HZ);
+    servoDrivers[i].attach(SERVO_CHANNELS[i].pin, SERVO_PULSE_MIN_US, SERVO_PULSE_MAX_US);
+
     float restDefault = SERVO_CHANNELS[i].restAngle;
     restOverride[i] = restPrefs.isKey(SERVO_CHANNELS[i].name)
                            ? restPrefs.getFloat(SERVO_CHANNELS[i].name, restDefault)
@@ -18,18 +17,9 @@ void ServoController::begin() {
     current[i] = restOverride[i];
     target[i] = restOverride[i];
     speedDegPerSec[i] = 0;
-    writeChannel(SERVO_CHANNELS[i].channel, current[i]);
+    writeIndex(i, current[i]);
   }
   lastUpdateMs = millis();
-}
-
-int ServoController::channelForName(const char *name) const {
-  for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
-    if (strcmp(SERVO_CHANNELS[i].name, name) == 0) {
-      return SERVO_CHANNELS[i].channel;
-    }
-  }
-  return -1;
 }
 
 int ServoController::indexForName(const char *name) const {
@@ -39,49 +29,43 @@ int ServoController::indexForName(const char *name) const {
   return -1;
 }
 
-float ServoController::clampToRange(uint8_t channel, float angleDeg) const {
-  for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
-    if (SERVO_CHANNELS[i].channel == channel) {
-      return constrain(angleDeg, SERVO_CHANNELS[i].minAngle, SERVO_CHANNELS[i].maxAngle);
-    }
-  }
-  return angleDeg;
+float ServoController::clampToRange(int index, float angleDeg) const {
+  if (index < 0 || (size_t)index >= SERVO_CHANNEL_COUNT) return angleDeg;
+  return constrain(angleDeg, SERVO_CHANNELS[index].minAngle, SERVO_CHANNELS[index].maxAngle);
 }
 
-uint16_t ServoController::angleToPulse(uint8_t channel, float angleDeg) const {
-  float clamped = clampToRange(channel, angleDeg);
-  return (uint16_t)map((long)(clamped * 100), 0, 18000, SERVO_PULSE_MIN, SERVO_PULSE_MAX);
+uint16_t ServoController::angleToPulseUs(int index, float angleDeg) const {
+  float clamped = clampToRange(index, angleDeg);
+  return (uint16_t)map((long)(clamped * 100), 0, 18000, SERVO_PULSE_MIN_US, SERVO_PULSE_MAX_US);
 }
 
-void ServoController::writeChannel(uint8_t channel, float angleDeg) {
-  pwm.setPWM(channel, 0, angleToPulse(channel, angleDeg));
+void ServoController::writeIndex(int index, float angleDeg) {
+  servoDrivers[index].writeMicroseconds(angleToPulseUs(index, angleDeg));
 }
 
 bool ServoController::setAngle(const char *name, float angleDeg) {
-  int channel = channelForName(name);
-  if (channel < 0) return false;
-  return setAngle((uint8_t)channel, angleDeg);
+  int index = indexForName(name);
+  if (index < 0) return false;
+  return setAngle(index, angleDeg);
 }
 
-bool ServoController::setAngle(uint8_t channel, float angleDeg) {
-  if (channel >= 16) return false;
-  float clamped = clampToRange(channel, angleDeg);
-  writeChannel(channel, clamped);
-  if (channel < SERVO_CHANNEL_COUNT) {
-    current[channel] = clamped;
-    target[channel] = clamped;
-  }
+bool ServoController::setAngle(int index, float angleDeg) {
+  if (index < 0 || (size_t)index >= SERVO_CHANNEL_COUNT) return false;
+  float clamped = clampToRange(index, angleDeg);
+  writeIndex(index, clamped);
+  current[index] = clamped;
+  target[index] = clamped;
   return true;
 }
 
 bool ServoController::setTarget(const char *name, float angleDeg, float speed) {
-  int channel = channelForName(name);
-  if (channel < 0 || (size_t)channel >= SERVO_CHANNEL_COUNT) return false;
+  int index = indexForName(name);
+  if (index < 0) return false;
   if (speed <= 0) {
-    return setAngle((uint8_t)channel, angleDeg);
+    return setAngle(index, angleDeg);
   }
-  target[channel] = clampToRange((uint8_t)channel, angleDeg);
-  speedDegPerSec[channel] = speed;
+  target[index] = clampToRange(index, angleDeg);
+  speedDegPerSec[index] = speed;
   return true;
 }
 
@@ -101,7 +85,7 @@ void ServoController::update() {
     }
     float step = speedDegPerSec[i] * dt;
     current[i] += (diff > 0) ? min(step, diff) : max(-step, diff);
-    writeChannel(SERVO_CHANNELS[i].channel, current[i]);
+    writeIndex(i, current[i]);
   }
 }
 
@@ -119,7 +103,7 @@ float ServoController::restAngle(const char *name) const {
 bool ServoController::setRestAngle(const char *name, float angleDeg) {
   int i = indexForName(name);
   if (i < 0) return false;
-  float clamped = clampToRange(SERVO_CHANNELS[i].channel, angleDeg);
+  float clamped = clampToRange(i, angleDeg);
   restOverride[i] = clamped;
   restPrefs.putFloat(name, clamped);
   return true;
@@ -133,7 +117,7 @@ bool ServoController::resetRestAngle(const char *name) {
   return true;
 }
 
-float ServoController::currentAngle(uint8_t channel) const {
-  if (channel >= SERVO_CHANNEL_COUNT) return 0;
-  return current[channel];
+float ServoController::currentAngle(int index) const {
+  if (index < 0 || (size_t)index >= SERVO_CHANNEL_COUNT) return 0;
+  return current[index];
 }
