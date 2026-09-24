@@ -19,6 +19,24 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
   const isOverridden = Math.abs(zero - defaultZero) > 0.5;
   const displayValue = jogValue ?? reported ?? zero;
 
+  const nudge = (delta: number) => {
+    const next = Math.min(max, Math.max(min, displayValue + delta));
+    setJogValue(next);
+    client.setServo(name, next).catch(() => {});
+  };
+
+  const nudgeButton = (delta: number) => (
+    <Pressable
+      key={delta}
+      style={[styles.nudgeButton, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+      onPress={() => nudge(delta)}
+    >
+      <Text style={[styles.nudgeButtonText, { color: colors.textPrimary }]}>
+        {delta > 0 ? `+${delta}` : delta}
+      </Text>
+    </Pressable>
+  );
+
   return (
     <View style={[styles.row, { backgroundColor: colors.surface }]}>
       <View style={styles.rowHeader}>
@@ -28,19 +46,29 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
         </Text>
       </View>
 
-      <Slider
-        style={styles.slider}
-        minimumValue={min}
-        maximumValue={max}
-        value={reported ?? zero}
-        onValueChange={(v) => setJogValue(v)}
-        onSlidingComplete={(v) => {
-          setJogValue(v);
-          client.setServo(name, v).catch(() => {});
-        }}
-        minimumTrackTintColor={colors.accent}
-        maximumTrackTintColor={colors.border}
-      />
+      <View style={styles.sliderRow}>
+        <View style={styles.nudgeGroup}>
+          {nudgeButton(-10)}
+          {nudgeButton(-5)}
+        </View>
+        <Slider
+          style={styles.slider}
+          minimumValue={min}
+          maximumValue={max}
+          value={displayValue}
+          onValueChange={(v) => setJogValue(v)}
+          onSlidingComplete={(v) => {
+            setJogValue(v);
+            client.setServo(name, v).catch(() => {});
+          }}
+          minimumTrackTintColor={colors.accent}
+          maximumTrackTintColor={colors.border}
+        />
+        <View style={styles.nudgeGroup}>
+          {nudgeButton(5)}
+          {nudgeButton(10)}
+        </View>
+      </View>
       <Text style={[styles.currentText, { color: colors.textSecondary }]}>current: {Math.round(displayValue)}°</Text>
 
       <View style={styles.buttonRow}>
@@ -155,7 +183,19 @@ const styles = StyleSheet.create({
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   label: { fontSize: 15, fontWeight: '700' },
   zeroText: { fontSize: 13, fontWeight: '600' },
-  slider: { width: '100%', height: 36 },
+  sliderRow: { flexDirection: 'row', alignItems: 'center' },
+  slider: { flex: 1, height: 36 },
+  nudgeGroup: { flexDirection: 'row' },
+  nudgeButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginHorizontal: 2,
+    minWidth: 36,
+    alignItems: 'center',
+  },
+  nudgeButtonText: { fontSize: 12, fontWeight: '700' },
   currentText: { fontSize: 12, marginBottom: 10 },
   buttonRow: { flexDirection: 'row', gap: 10 },
   setButton: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
