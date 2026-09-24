@@ -72,7 +72,7 @@ void GamepadController::update() {
     // the jaw stays under audio-envelope control from main.cpp.
     g_jawOverride = ctl->l1();
     if (g_jawOverride) {
-      s_servos->setAngle("jaw", mapAxis(ctl->axisY(), 0, 55));
+      s_servos->setAngle("jaw", mapAxis(ctl->axisY(), 0, 30));
     }
 
     if (ctl->a()) s_audio->play(CLIP_A);

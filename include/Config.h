@@ -42,7 +42,7 @@ struct ServoChannelDef {
 };
 
 static const ServoChannelDef SERVO_CHANNELS[] = {
-    {"jaw", 13, 0, 55, 0},
+    {"jaw", 13, 0, 30, 0},
     {"neck_pan", 16, 30, 150, 90},
     {"neck_tilt", 17, 60, 120, 90},
     {"eye_pan", 18, 0, 180, 90},
