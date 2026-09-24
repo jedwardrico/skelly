@@ -4,7 +4,7 @@ import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
-import { SERVO_LIST } from '../api/servoConfig';
+import { SERVO_LIST, VISIBLE_SERVO_LIST } from '../api/servoConfig';
 import type { ServoName } from '../api/skellyClient';
 
 function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: string; min: number; max: number }) {
@@ -130,7 +130,7 @@ export function ServoConfigScreen() {
 
   const homeAll = () => {
     Promise.all(
-      SERVO_LIST.map((s) => client.setServo(s.name, status.servoZero[s.name] ?? s.rest)),
+      VISIBLE_SERVO_LIST.map((s) => client.setServo(s.name, status.servoZero[s.name] ?? s.rest)),
     ).catch(() => Alert.alert('Failed to move one or more servos home'));
   };
 
@@ -154,7 +154,7 @@ export function ServoConfigScreen() {
         matter which phone or app connects - see docs/API.md.
       </Text>
 
-      {SERVO_LIST.map((servo) => (
+      {VISIBLE_SERVO_LIST.map((servo) => (
         <ServoZeroRow key={servo.name} name={servo.name} label={servo.label} min={servo.min} max={servo.max} />
       ))}
 

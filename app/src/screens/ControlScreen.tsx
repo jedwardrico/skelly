@@ -13,7 +13,7 @@ import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { ServoSlider } from '../components/ServoSlider';
-import { SERVO_LIST } from '../api/servoConfig';
+import { VISIBLE_SERVO_LIST } from '../api/servoConfig';
 
 // Only extensions the firmware's AudioPlayer/upload sanitizer accept
 // (lib/AudioPlayer, lib/ControlAPI's sanitizeAudioFilename).
@@ -156,7 +156,7 @@ export function ControlScreen() {
 
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Manual servo control</Text>
       <View style={styles.servoList}>
-        {SERVO_LIST.map((servo) => (
+        {VISIBLE_SERVO_LIST.map((servo) => (
           <ServoSlider key={servo.name} name={servo.name} label={servo.label} min={servo.min} max={servo.max} />
         ))}
       </View>
