@@ -62,7 +62,7 @@ export function ServoSlider({ name, label, min, max }: Props) {
           style={styles.slider}
           minimumValue={min}
           maximumValue={max}
-          value={reported ?? (min + max) / 2}
+          value={value}
           onSlidingStart={() => setDragging(true)}
           onValueChange={(v) => setLocalValue(v)}
           onSlidingComplete={(v) => {
