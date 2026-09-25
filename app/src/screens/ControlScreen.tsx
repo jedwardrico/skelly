@@ -157,7 +157,7 @@ export function ControlScreen() {
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Manual servo control</Text>
       <View style={styles.servoList}>
         {VISIBLE_SERVO_LIST.map((servo) => (
-          <ServoSlider key={servo.name} name={servo.name} label={servo.label} min={servo.min} max={servo.max} />
+          <ServoSlider key={servo.name} name={servo.name} label={servo.label} min={servo.min} max={servo.max} rest={servo.rest} />
         ))}
       </View>
     </View>

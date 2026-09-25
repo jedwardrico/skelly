@@ -10,16 +10,17 @@ interface Props {
   label: string;
   min: number;
   max: number;
+  rest: number;
 }
 
-export function ServoSlider({ name, label, min, max }: Props) {
+export function ServoSlider({ name, label, min, max, rest }: Props) {
   const { client, status } = useSkelly();
   const { colors } = useTheme();
   const [dragging, setDragging] = useState(false);
   const [localValue, setLocalValue] = useState<number | null>(null);
 
   const reported = status.servos[name];
-  const value = localValue ?? reported ?? (min + max) / 2;
+  const value = localValue ?? reported ?? rest;
 
   // Once the servo's real position catches up to our optimistic local value
   // (set while dragging), drop the override and trust the reported status.
