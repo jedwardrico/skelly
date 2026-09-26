@@ -56,15 +56,16 @@
   BluePad32 Arduino core, which replaces the standard Arduino-ESP32
   framework package. See `docs/BLUEPAD32.md` before touching this.
 
-- **NeckMixer** - the neck's two front servos (`neck_left`/`neck_right` in
-  `SERVO_CHANNELS`) each push/pull a rod into the head's ball joint, so
-  driving them independently would fight the linkage. `NeckMixer` mixes a
-  single pitch/roll pair down to those two raw angles around each rod's own
-  `ServoController` rest angle - driving them together nods the head,
-  driving them opposite amounts tilts it. `neck_yaw` (base rotation) isn't
-  mixed and goes straight through `ServoController`. Only
-  `GamepadController` uses it today; see `docs/API.md` for why the control
-  API still takes raw per-rod angles.
+- **NeckMixer** - the head rotates around a single center pivot at the
+  front of the neck, and the neck's two front servos (`neck_left`/
+  `neck_right` in `SERVO_CHANNELS`) each push/pull a rod mounted on either
+  side of that pivot, so driving them independently would fight the
+  linkage. `NeckMixer` mixes a single pitch/roll pair down to those two raw
+  angles around each rod's own `ServoController` rest angle - driving them
+  together nods the head around the pivot, driving them opposite amounts
+  rolls it. `neck_yaw` (base rotation) isn't mixed and goes straight
+  through `ServoController`. Only `GamepadController` uses it today; see
+  `docs/API.md` for why the control API still takes raw per-rod angles.
 
 ## Data flow: a spoken line
 

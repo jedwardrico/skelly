@@ -57,12 +57,13 @@ These GPIOs match the `pin` values in `SERVO_CHANNELS` in
 differs. They're chosen to avoid the I2S bus below, UART0 (GPIO 0/1/3), the
 flash pins (GPIO 6-11), and the strapping pins (GPIO 0/2/5/12/15).
 
-The neck is a 3-servo rig: `neck_left` and `neck_right` each push/pull a rod
-into the head's ball joint from the front, on either side - driving them
-together nods the head (pitch) and driving them opposite amounts tilts it
-(roll), giving a more fluid combined motion than a single pitch/tilt servo
-would. `neck_yaw` sits at the base and rotates the whole head assembly
-independently of that linkage. `lib/NeckMixer` mixes a single pitch/roll
+The neck is a 3-servo rig: the head rotates around a single center pivot at
+the front of the neck, and `neck_left`/`neck_right` each push/pull a rod
+mounted on either side of that pivot. Driving them together nods the head
+around the pivot (pitch); driving them opposite amounts rolls it (tilt) -
+a more fluid combined motion than a single pitch/tilt servo would give.
+`neck_yaw` sits at the base and rotates the whole head assembly
+independently of that pivot. `lib/NeckMixer` mixes a single pitch/roll
 input down to `neck_left`/`neck_right`'s raw angles for gamepad control;
 `neck_yaw` isn't mixed and takes a raw angle directly.
 

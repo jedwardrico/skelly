@@ -3,11 +3,11 @@
 #include "ServoController.h"
 
 // Mixes a single pitch/roll axis pair down to the two push-rod servos
-// (`neck_left`/`neck_right` in SERVO_CHANNELS) that share the neck's ball
-// joint: driving both rods the same amount nods the head (pitch), driving
-// them opposite amounts tilts it (roll). `neck_yaw` rotates the whole
-// assembly at the base and isn't mixed - drive it directly through
-// ServoController.
+// (`neck_left`/`neck_right` in SERVO_CHANNELS), mounted on either side of
+// the neck's center pivot: driving both rods the same amount nods the head
+// around that pivot (pitch), driving them opposite amounts rolls it
+// (tilt). `neck_yaw` rotates the whole assembly at the base and isn't
+// mixed - drive it directly through ServoController.
 class NeckMixer {
 public:
   void begin(ServoController *servos);

@@ -41,12 +41,13 @@ struct ServoChannelDef {
   float restAngle;
 };
 
-// The neck is a 3-servo rig: `neck_left`/`neck_right` each push/pull a rod
-// into the head's ball joint, so driving them together nods the head
-// (pitch) and driving them opposite amounts tilts it (roll) - see
-// lib/NeckMixer, which mixes a single pitch/roll pair down to these two raw
-// channels. `neck_yaw` is a separate, unmixed servo that rotates the whole
-// head assembly at the base.
+// The neck is a 3-servo rig: the head rotates around a single center pivot
+// at the front of the neck, and `neck_left`/`neck_right` each push/pull a
+// rod mounted on either side of that pivot. Driving them together nods the
+// head around the pivot (pitch); driving them opposite amounts rolls it
+// (tilt) - see lib/NeckMixer, which mixes a single pitch/roll pair down to
+// these two raw channels. `neck_yaw` is a separate, unmixed servo that
+// rotates the whole head assembly at the base.
 static const ServoChannelDef SERVO_CHANNELS[] = {
     {"jaw", 13, 0, 30, 0},
     {"neck_left", 16, 60, 120, 90},
