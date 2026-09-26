@@ -19,15 +19,17 @@ WiFi - see `include/Secrets.h.example`).
   "jawLevel": 0.42,
   "servos": {
     "jaw": 23.1,
-    "neck_pan": 90,
-    "neck_tilt": 90,
+    "neck_left": 90,
+    "neck_right": 90,
+    "neck_yaw": 90,
     "eye_pan": 90,
     "eye_tilt": 90
   },
   "servoZero": {
     "jaw": 0,
-    "neck_pan": 90,
-    "neck_tilt": 90,
+    "neck_left": 90,
+    "neck_right": 90,
+    "neck_yaw": 90,
     "eye_pan": 90,
     "eye_tilt": 90
   }
@@ -60,11 +62,13 @@ No body. Stops playback immediately (jaw returns to idle on the next loop).
 ### `POST /api/servo`
 
 ```json
-{ "name": "neck_pan", "angle": 45 }
+{ "name": "neck_yaw", "angle": 45 }
 ```
 
 `name` must match an entry in `SERVO_CHANNELS` (`include/Config.h`). Moves
-instantly; angle is clamped to that servo's configured min/max.
+instantly; angle is clamped to that servo's configured min/max. Note that
+`neck_left`/`neck_right` are raw push-rod angles, not pitch/roll - see
+"Neck pitch/roll" below.
 
 ### `POST /api/servo/zero`
 
@@ -128,8 +132,8 @@ animate a "talking" indicator or mouth graphic without polling:
   "playing": true,
   "file": "/audio/hello.mp3",
   "jawLevel": 0.42,
-  "servos": { "jaw": 23.1, "neck_pan": 90, ... },
-  "servoZero": { "jaw": 4, "neck_pan": 90, ... }
+  "servos": { "jaw": 23.1, "neck_left": 90, ... },
+  "servoZero": { "jaw": 4, "neck_left": 90, ... }
 }
 ```
 
@@ -144,3 +148,10 @@ calibration UI the skull's actual state after a reboot or a fresh connect.
   `docs/ARCHITECTURE.md`.
 - **Auth** - none today. Fine on a private home network; add at least a
   shared-secret header/query param before exposing this beyond your LAN.
+- **Neck pitch/roll over the control API** - the neck's two front push-rod
+  servos (`neck_left`/`neck_right`) are only mixed into a combined
+  pitch/roll axis for gamepad input today (`lib/NeckMixer`, driven from
+  `GamepadController`). A client using `/api/servo` directly still commands
+  each rod's raw angle and has to do its own mixing; exposing a
+  `neck_pitch`/`neck_roll` command here is future work once the neck is
+  actually built and the mix is tuned against real hardware.

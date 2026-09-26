@@ -56,6 +56,17 @@
   BluePad32 Arduino core, which replaces the standard Arduino-ESP32
   framework package. See `docs/BLUEPAD32.md` before touching this.
 
+- **NeckMixer** - the head rotates around a single center pivot at the
+  front of the neck, and the neck's two front servos (`neck_left`/
+  `neck_right` in `SERVO_CHANNELS`) each push/pull a rod mounted on either
+  side of that pivot, so driving them independently would fight the
+  linkage. `NeckMixer` mixes a single pitch/roll pair down to those two raw
+  angles around each rod's own `ServoController` rest angle - driving them
+  together nods the head around the pivot, driving them opposite amounts
+  rolls it. `neck_yaw` (base rotation) isn't mixed and goes straight
+  through `ServoController`. Only `GamepadController` uses it today; see
+  `docs/API.md` for why the control API still takes raw per-rod angles.
+
 ## Data flow: a spoken line
 
 1. App/web UI sends `{"cmd":"play","file":"hello.mp3"}` over the WebSocket
@@ -92,7 +103,9 @@ drive it identically. Three speech pipelines are worth planning for:
 
 ## Where BluePad32 fits in (roadmap)
 
-`GamepadController` maps the right stick to neck pan/tilt, the left stick
-(while holding L1) to direct jaw puppeteering, and face buttons to preset
-speech clips, as a starting point - not a finished control scheme. See
-`docs/BLUEPAD32.md` for what's required to actually build it.
+`GamepadController` maps the right stick to neck pitch/roll (mixed through
+`NeckMixer` down to the two push-rod servos), the left stick's X axis to
+neck yaw, the left stick's Y axis (while holding L1) to direct jaw
+puppeteering, and face buttons to preset speech clips, as a starting point -
+not a finished control scheme. See `docs/BLUEPAD32.md` for what's required
+to actually build it.

@@ -51,10 +51,11 @@ https://bluepad32.readthedocs.io/en/latest/plat_arduino/
 - `GamepadController::begin()`/`update()` - connect/disconnect handling and
   a per-loop input poll, guarded entirely behind `#ifdef ENABLE_BLUEPAD32`
   so it's a no-op in the default build.
-- A starter mapping: right stick -> neck pan/tilt, left stick while holding
-  L1 -> direct jaw puppeteering (overriding the audio-envelope jaw sync
-  while held), face buttons -> preset speech clips via the same
-  `AudioPlayer` the WiFi control API uses.
+- A starter mapping: right stick -> neck pitch/roll (mixed through
+  `lib/NeckMixer` down to the two push-rod servos), left stick's X axis ->
+  neck yaw, left stick's Y axis while holding L1 -> direct jaw puppeteering
+  (overriding the audio-envelope jaw sync while held), face buttons ->
+  preset speech clips via the same `AudioPlayer` the WiFi control API uses.
 - `g_jawOverride`, so `main.cpp`'s audio-driven jaw sync backs off while a
   human is puppeteering the jaw by hand.
 

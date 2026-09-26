@@ -2,7 +2,7 @@
 // firmware repo). REST for one-off calls, WebSocket for live status and
 // low-latency commands.
 
-export type ServoName = 'jaw' | 'neck_pan' | 'neck_tilt' | 'eye_pan' | 'eye_tilt';
+export type ServoName = 'jaw' | 'neck_left' | 'neck_right' | 'neck_yaw' | 'eye_pan' | 'eye_tilt';
 
 export interface SkellyStatus {
   playing: boolean;
