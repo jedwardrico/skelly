@@ -10,7 +10,7 @@ Ultimate ends up pairing with.
 
 If your WROVER module is an original (non-"B"/"E") revision, GPIO 16 and 17
 are reserved for the module's PSRAM and unavailable as GPIO - move
-`neck_pan`/`neck_tilt` off those pins in `include/Config.h` (and the table
+`neck_left`/`neck_right` off those pins in `include/Config.h` (and the table
 below) if so. Nearly all WROVER modules sold today are WROVER-B/-E, which
 free GPIO 16/17 for normal use, so the default wiring below assumes that.
 
@@ -43,8 +43,9 @@ itself over software PWM (via the `ESP32Servo` library), one GPIO per servo:
 | Servo pin (signal) | ESP32 GPIO |
 |---------------------|------------|
 | `jaw`               | GPIO 13    |
-| `neck_pan`          | GPIO 16    |
-| `neck_tilt`         | GPIO 17    |
+| `neck_left`         | GPIO 16    |
+| `neck_right`        | GPIO 17    |
+| `neck_yaw`          | GPIO 4     |
 | `eye_pan`           | GPIO 18    |
 | `eye_tilt`          | GPIO 19    |
 
@@ -55,6 +56,15 @@ These GPIOs match the `pin` values in `SERVO_CHANNELS` in
 `include/Config.h` - change them there (and in this table) if your wiring
 differs. They're chosen to avoid the I2S bus below, UART0 (GPIO 0/1/3), the
 flash pins (GPIO 6-11), and the strapping pins (GPIO 0/2/5/12/15).
+
+The neck is a 3-servo rig: `neck_left` and `neck_right` each push/pull a rod
+into the head's ball joint from the front, on either side - driving them
+together nods the head (pitch) and driving them opposite amounts tilts it
+(roll), giving a more fluid combined motion than a single pitch/tilt servo
+would. `neck_yaw` sits at the base and rotates the whole head assembly
+independently of that linkage. `lib/NeckMixer` mixes a single pitch/roll
+input down to `neck_left`/`neck_right`'s raw angles for gamepad control;
+`neck_yaw` isn't mixed and takes a raw angle directly.
 
 The two eyeballs are mechanically linked (a single yoke/linkage), so each axis
 moves both eyes together — there's no independent per-eye servo.
@@ -87,11 +97,11 @@ inside most 3D-printed skull cavities.
 
 Chosen specifically so the servo pins and the I2S bus don't share any pins:
 
-- Servos: GPIO 13 (jaw), GPIO 16 (neck_pan), GPIO 17 (neck_tilt), GPIO 18
-  (eye_pan), GPIO 19 (eye_tilt)
+- Servos: GPIO 13 (jaw), GPIO 16 (neck_left), GPIO 17 (neck_right), GPIO 4
+  (neck_yaw), GPIO 18 (eye_pan), GPIO 19 (eye_tilt)
 - I2S (MAX98357A): GPIO 26 (BCLK), GPIO 25 (LRC), GPIO 27 (DIN), GPIO 14 (amp enable, optional)
 
-GPIO 13/16-19/25-27 are all safe general-purpose pins on a WROVER-B/-E
+GPIO 4/13/16-19/25-27 are all safe general-purpose pins on a WROVER-B/-E
 module (no strapping/flash/PSRAM conflicts). If you move things around,
 avoid GPIO 6-11 (connected to the module's internal flash), treat GPIO
 0/2/5/12/15 as strapping pins to leave alone unless you know what you're

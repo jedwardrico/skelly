@@ -5,6 +5,7 @@
 #include "AudioPlayer.h"
 #include "ControlAPI.h"
 #ifdef ENABLE_BLUEPAD32
+#include "NeckMixer.h"
 #include "GamepadController.h"
 #endif
 
@@ -12,6 +13,7 @@ static ServoController servos;
 static AudioPlayer audio;
 static ControlAPI controlApi;
 #ifdef ENABLE_BLUEPAD32
+static NeckMixer neck;
 static GamepadController gamepad;
 #endif
 
@@ -56,7 +58,8 @@ void setup() {
   controlApi.begin();
 
 #ifdef ENABLE_BLUEPAD32
-  gamepad.begin(&servos, &audio);
+  neck.begin(&servos);
+  gamepad.begin(&servos, &audio, &neck);
   Serial.println("[Skelly] BluePad32 gamepad support enabled");
 #endif
 

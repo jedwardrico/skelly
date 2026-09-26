@@ -9,11 +9,12 @@
 
 #include "ServoController.h"
 #include "AudioPlayer.h"
+#include "NeckMixer.h"
 
 class GamepadController {
 public:
-  // servos/audio are owned by main.cpp; GamepadController just drives them.
-  void begin(ServoController *servos, AudioPlayer *audio);
+  // servos/audio/neck are owned by main.cpp; GamepadController just drives them.
+  void begin(ServoController *servos, AudioPlayer *audio, NeckMixer *neck);
   void update();
 };
 
