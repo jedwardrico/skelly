@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import * as Speech from 'expo-speech';
+import { setAudioModeAsync } from 'expo-audio';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
@@ -34,6 +36,10 @@ export function SpeechScreen() {
     Speech.getAvailableVoicesAsync()
       .then((all) => setVoices(all.filter((v) => v.language?.startsWith('en'))))
       .catch(() => setVoices([]));
+
+    // Without this, iOS silences on-device TTS whenever the ring/silent
+    // switch is flipped, since AVSpeechSynthesizer otherwise respects it.
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
   }, []);
 
   // On-device TTS speaks through the phone's own speaker - it doesn't touch
@@ -64,7 +70,10 @@ export function SpeechScreen() {
         setSpeaking(false);
         if (puppetJaw) client.setServo('jaw', jawZero).catch(() => {});
       },
-      onError: () => setSpeaking(false),
+      onError: (error) => {
+        setSpeaking(false);
+        Alert.alert('Speech failed', error?.message ?? 'Unknown error');
+      },
     });
   };
 
@@ -160,7 +169,7 @@ export function SpeechScreen() {
 
       <View style={[styles.puppetRow, { backgroundColor: colors.surface }]}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.label, { color: colors.textPrimary }]}>Puppet skull jaw while speaking</Text>
+          <Text style={[styles.puppetLabel, { color: colors.textPrimary }]}>Puppet skull jaw while speaking</Text>
           <Text style={[styles.hint, { color: colors.textMuted }]}>
             Sends jaw servo pulses to Skelly over the control API in time with
             speech. The audio itself plays from this phone, not the skull.
@@ -194,6 +203,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
   label: { width: 60, fontSize: 14, fontWeight: '600' },
+  puppetLabel: { fontSize: 14, fontWeight: '600' },
   slider: { flex: 1, height: 36 },
   value: { width: 50, fontSize: 13, textAlign: 'right' },
   voiceRow: { marginBottom: 4 },
