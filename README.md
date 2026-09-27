@@ -36,6 +36,7 @@ lib/ServoController/        direct-GPIO servo control, by name, non-blocking mov
 lib/AudioPlayer/            MAX98357A I2S playback + audio-envelope jaw sync
 lib/ControlAPI/             WiFi + REST/WebSocket JSON control surface
 lib/NeckMixer/              mixes pitch/roll into the two push-rod neck servos
+lib/EyeAnimator/            autonomous eye_pan/eye_tilt movement while talking
 lib/GamepadController/      BluePad32 scaffold (compiles to nothing by default)
 data/audio/                 drop .mp3/.wav speech clips here
 docs/                       architecture, wiring, API reference, BluePad32 setup

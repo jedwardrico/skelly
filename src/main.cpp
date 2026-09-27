@@ -4,6 +4,7 @@
 #include "ServoController.h"
 #include "AudioPlayer.h"
 #include "ControlAPI.h"
+#include "EyeAnimator.h"
 #ifdef ENABLE_BLUEPAD32
 #include "NeckMixer.h"
 #include "GamepadController.h"
@@ -12,6 +13,7 @@
 static ServoController servos;
 static AudioPlayer audio;
 static ControlAPI controlApi;
+static EyeAnimator eyes;
 #ifdef ENABLE_BLUEPAD32
 static NeckMixer neck;
 static GamepadController gamepad;
@@ -57,6 +59,8 @@ void setup() {
   controlApi.onStatusRequest(buildStatus);
   controlApi.begin();
 
+  eyes.begin(&servos);
+
 #ifdef ENABLE_BLUEPAD32
   neck.begin(&servos);
   gamepad.begin(&servos, &audio, &neck);
@@ -95,4 +99,6 @@ void loop() {
       servos.setAngle(JAW_SERVO_NAME, angle);
     }
   }
+
+  eyes.update(audio.isPlaying());
 }

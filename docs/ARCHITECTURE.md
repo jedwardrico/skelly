@@ -67,6 +67,14 @@
   through `ServoController`. Only `GamepadController` uses it today; see
   `docs/API.md` for why the control API still takes raw per-rod angles.
 
+- **EyeAnimator** - keeps `eye_pan`/`eye_tilt` from sitting dead-still while
+  Skelly talks. Every `loop()`, `main.cpp` tells it whether audio is
+  playing; while it is, it periodically picks one of two randomized moves
+  around each servo's `ServoController` rest angle - a slower, wider
+  "wander" glance or a quick, small "dart" saccade - via
+  `ServoController::setTarget()`. When playback stops, it eases the eyes
+  back to rest instead of leaving them wherever the last move landed.
+
 ## Data flow: a spoken line
 
 1. App/web UI sends `{"cmd":"play","file":"hello.mp3"}` over the WebSocket
@@ -76,7 +84,9 @@
 3. `AudioPlayer` starts decoding the file and streaming PCM to the
    MAX98357A over I2S.
 4. Every `loop()`, `main.cpp` reads `AudioPlayer::jawLevel()` and pushes it
-   onto the `jaw` servo via `ServoController::setAngle()`.
+   onto the `jaw` servo via `ServoController::setAngle()`, and tells
+   `EyeAnimator` that audio is playing so it starts moving `eye_pan`/
+   `eye_tilt` on its own.
 5. `ControlAPI::loop()` broadcasts a status frame (playing state, file, jaw
    level, all servo angles) to connected WebSocket clients a few times a
    second, so a UI can show a live "talking" indicator without polling.
