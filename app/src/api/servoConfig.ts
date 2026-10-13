@@ -5,14 +5,6 @@ import type { ServoName } from './skellyClient';
 // app, the ESP32 clamps to its own configured min/max regardless.
 export const SERVO_LIST: { name: ServoName; label: string; min: number; max: number; rest: number; hidden?: boolean }[] = [
   { name: 'jaw', label: 'Jaw', min: 0, max: 30, rest: 0 },
-  // Neck isn't physically built yet - hidden from the UI until it is.
-  // neck_left/neck_right are the raw push-rod servos (see docs/WIRING.md);
-  // moving them together nods the head, moving them opposite amounts tilts
-  // it - the firmware's NeckMixer only mixes gamepad input this way today,
-  // so jogging these sliders moves each rod independently.
-  { name: 'neck_left', label: 'Neck Left', min: 60, max: 120, rest: 90, hidden: true },
-  { name: 'neck_right', label: 'Neck Right', min: 60, max: 120, rest: 90, hidden: true },
-  { name: 'neck_yaw', label: 'Neck Yaw', min: 30, max: 150, rest: 90, hidden: true },
   { name: 'eye_pan', label: 'Eye Pan', min: 0, max: 180, rest: 90 },
   { name: 'eye_tilt', label: 'Eye Tilt', min: 0, max: 180, rest: 90 },
 ];
