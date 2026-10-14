@@ -12,7 +12,7 @@ WiFi, plus on-device text-to-speech.
 - **Control** - see what's playing and the live jaw level, play/stop the
   speech clips already on the skull's LittleFS (`data/audio/`), upload a
   recorded `.mp3`/`.wav` clip from the phone straight to the skull over WiFi
-  (`POST /api/upload`, no USB/`uploadfs` needed), and jog the jaw/neck/eye
+  (`POST /api/upload`, no USB/`uploadfs` needed), and jog the jaw/eye
   servos with sliders.
 - **Speech** - type text and speak it with the phone's own text-to-speech
   engine (`expo-speech`), with rate/pitch/voice controls. Optionally
