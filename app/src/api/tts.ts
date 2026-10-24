@@ -42,8 +42,7 @@ export async function synthesizeSpeech(
     },
     body: JSON.stringify({
       text,
-      // Flash costs half the credits of the other models on the free tier.
-      model_id: 'eleven_flash_v2_5',
+      model_id: 'eleven_v4',
       voice_settings: { speed: Math.min(1.2, Math.max(0.7, speed)) },
     }),
   });
