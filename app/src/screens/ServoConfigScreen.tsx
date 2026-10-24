@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST, VISIBLE_SERVO_LIST } from '../api/servoConfig';
 import type { ServoName } from '../api/skellyClient';
+import { TTS_API_KEY_STORAGE_KEY } from '../api/tts';
 
 function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: string; min: number; max: number }) {
   const { client, status } = useSkelly();
@@ -124,6 +126,56 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
   );
 }
 
+function ApiKeyCard() {
+  const { colors } = useTheme();
+  const [key, setKey] = useState('');
+  const [savedKey, setSavedKey] = useState('');
+
+  useEffect(() => {
+    AsyncStorage.getItem(TTS_API_KEY_STORAGE_KEY)
+      .then((saved) => {
+        setKey(saved ?? '');
+        setSavedKey(saved ?? '');
+      })
+      .catch(() => {});
+  }, []);
+
+  const dirty = key.trim() !== savedKey;
+
+  const save = async () => {
+    const next = key.trim();
+    try {
+      await AsyncStorage.setItem(TTS_API_KEY_STORAGE_KEY, next);
+      setKey(next);
+      setSavedKey(next);
+    } catch (err) {
+      Alert.alert('Failed to save API key', String(err));
+    }
+  };
+
+  return (
+    <View style={[styles.row, { backgroundColor: colors.surface }]}>
+      <TextInput
+        style={[styles.keyInput, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
+        value={key}
+        onChangeText={setKey}
+        placeholder="xi-api-key"
+        placeholderTextColor={colors.textMuted}
+        autoCapitalize="none"
+        autoCorrect={false}
+        secureTextEntry
+      />
+      <Pressable
+        style={[styles.setButton, { backgroundColor: colors.accent }, !dirty && styles.buttonDisabled]}
+        disabled={!dirty}
+        onPress={save}
+      >
+        <Text style={styles.setButtonText}>{dirty ? 'Save' : savedKey ? 'Saved' : 'Save'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export function ServoConfigScreen() {
   const { client, status } = useSkelly();
   const { colors, mode, toggleTheme } = useTheme();
@@ -145,6 +197,13 @@ export function ServoConfigScreen() {
         <Text style={[styles.label, { color: colors.textPrimary }]}>Dark mode</Text>
         <Switch value={mode === 'dark'} onValueChange={toggleTheme} trackColor={{ true: colors.accent }} />
       </View>
+
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ElevenLabs API key</Text>
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        Used by the Speech tab to generate speech for the skull's speaker.
+        Stored only on this phone.
+      </Text>
+      <ApiKeyCard />
 
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Servo zero calibration</Text>
       <Text style={[styles.hint, { color: colors.textMuted }]}>
@@ -197,6 +256,7 @@ const styles = StyleSheet.create({
   },
   nudgeButtonText: { fontSize: 12, fontWeight: '700' },
   currentText: { fontSize: 12, marginBottom: 10 },
+  keyInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 15, marginBottom: 10 },
   buttonRow: { flexDirection: 'row', gap: 10 },
   setButton: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   setButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },

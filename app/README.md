@@ -14,11 +14,14 @@ WiFi, plus on-device text-to-speech.
   recorded `.mp3`/`.wav` clip from the phone straight to the skull over WiFi
   (`POST /api/upload`, no USB/`uploadfs` needed), and jog the jaw/eye
   servos with sliders.
-- **Speech** - type text and speak it with the phone's own text-to-speech
-  engine (`expo-speech`), with rate/pitch/voice controls. Optionally
-  puppeteers the skull's jaw servo in time with the phone's speech via the
-  control API.
-- **Setup** - per-servo zero/rest calibration: jog a servo to where it should
+- **Speech** - type text and have Skelly say it. By default the text is
+  turned into speech with ElevenLabs (`eleven_v4`), uploaded to the skull and
+  played on its speaker with the jaw following the audio; or switch to the
+  phone's own text-to-speech engine (`expo-speech`), which puppets the jaw
+  servo in time with the phone's speech via the control API. Rate, voice and
+  (phone only) pitch controls.
+- **Setup** - the ElevenLabs API key (saved on the phone) and per-servo
+  zero/rest calibration: jog a servo to where it should
   sit at rest and save it as that servo's "zero" (persisted on the skull
   itself via `POST /api/servo/zero`, survives reboot), or reset back to the
   firmware's compiled-in default. Used by "Home all" here and by the jaw
@@ -29,7 +32,7 @@ WiFi, plus on-device text-to-speech.
 
 The Speech tab's "Play through skull speaker" switch (on by default) sends
 the typed text to ElevenLabs' TTS API (`eleven_v4`, key entered in the
-tab and stored locally in `AsyncStorage`), uploads the returned mp3 to the
+Setup tab and stored locally in `AsyncStorage`), uploads the returned mp3 to the
 skull as `speech.mp3` (`POST /api/upload`), and triggers `play`. The audio
 comes out of the MAX98357A amp and the existing audio-envelope jaw sync
 (`lib/AudioPlayer/JawSyncOutput`) drives the jaw from the real waveform.
