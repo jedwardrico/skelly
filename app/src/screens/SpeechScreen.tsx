@@ -11,13 +11,21 @@ import {
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { setAudioModeAsync } from 'expo-audio';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
+import { synthesizeSpeech, TTS_VOICES, TtsVoice } from '../api/tts';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
+
+const SKULL_STORAGE_KEY = 'skelly:speech:skull';
+const API_KEY_STORAGE_KEY = 'skelly:speech:openaiKey';
+const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
+// Fixed name so repeated speech overwrites one clip instead of filling LittleFS.
+const SPEECH_CLIP = 'speech.mp3';
 
 export function SpeechScreen() {
   const { client, status } = useSkelly();
@@ -31,6 +39,36 @@ export function SpeechScreen() {
   const [speaking, setSpeaking] = useState(false);
   const [puppetJaw, setPuppetJaw] = useState(true);
   const jawOpenRef = useRef(false);
+  const [useSkull, setUseSkull] = useState(true);
+  const [apiKey, setApiKey] = useState('');
+  const [skullVoice, setSkullVoice] = useState<TtsVoice>('alloy');
+  const [busy, setBusy] = useState<'synthesizing' | 'uploading' | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.multiGet([SKULL_STORAGE_KEY, API_KEY_STORAGE_KEY, SKULL_VOICE_STORAGE_KEY])
+      .then((pairs) => {
+        const saved = Object.fromEntries(pairs);
+        if (saved[SKULL_STORAGE_KEY] != null) setUseSkull(saved[SKULL_STORAGE_KEY] === '1');
+        if (saved[API_KEY_STORAGE_KEY]) setApiKey(saved[API_KEY_STORAGE_KEY]!);
+        if (saved[SKULL_VOICE_STORAGE_KEY] && (TTS_VOICES as readonly string[]).includes(saved[SKULL_VOICE_STORAGE_KEY]!)) {
+          setSkullVoice(saved[SKULL_VOICE_STORAGE_KEY] as TtsVoice);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const changeUseSkull = (v: boolean) => {
+    setUseSkull(v);
+    AsyncStorage.setItem(SKULL_STORAGE_KEY, v ? '1' : '0').catch(() => {});
+  };
+  const changeApiKey = (v: string) => {
+    setApiKey(v);
+    AsyncStorage.setItem(API_KEY_STORAGE_KEY, v).catch(() => {});
+  };
+  const changeSkullVoice = (v: TtsVoice) => {
+    setSkullVoice(v);
+    AsyncStorage.setItem(SKULL_VOICE_STORAGE_KEY, v).catch(() => {});
+  };
 
   useEffect(() => {
     Speech.getAvailableVoicesAsync()
@@ -54,8 +92,35 @@ export function SpeechScreen() {
     client.setServo('jaw', angle).catch(() => {});
   };
 
+  // Synthesizes with a cloud TTS, uploads the mp3 to the skull and plays it
+  // there. The firmware's audio-envelope jaw sync drives the jaw, so no
+  // phone-side puppeteering is needed on this path.
+  const speakOnSkull = async () => {
+    if (!apiKey.trim()) {
+      Alert.alert('API key needed', 'Enter an OpenAI API key to generate speech for the skull.');
+      return;
+    }
+    try {
+      setBusy('synthesizing');
+      const audio = await synthesizeSpeech(apiKey.trim(), text.trim(), skullVoice, rate);
+      setBusy('uploading');
+      // Stop first so we're not overwriting the clip while it's being read.
+      await client.stop().catch(() => {});
+      await client.uploadBlob(audio, SPEECH_CLIP);
+      await client.play(SPEECH_CLIP);
+    } catch (err) {
+      Alert.alert('Speech failed', err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const speak = () => {
     if (!text.trim()) return;
+    if (useSkull) {
+      speakOnSkull();
+      return;
+    }
     Speech.speak(text.trim(), {
       voice: voiceId,
       rate,
@@ -78,10 +143,18 @@ export function SpeechScreen() {
   };
 
   const stop = () => {
+    if (useSkull) {
+      client.stop().catch(() => {});
+      return;
+    }
     Speech.stop();
     setSpeaking(false);
     if (puppetJaw) client.setServo('jaw', jawZero).catch(() => {});
   };
+
+  const skullSpeaking = useSkull && status.playing && status.file?.endsWith(SPEECH_CLIP);
+  const active = useSkull ? !!skullSpeaking : speaking;
+  const buttonLabel = busy === 'synthesizing' ? 'Generating…' : busy === 'uploading' ? 'Sending to skull…' : active ? 'Stop' : 'Speak';
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
@@ -111,6 +184,7 @@ export function SpeechScreen() {
         />
         <Text style={[styles.value, { color: colors.textSecondary }]}>{rate.toFixed(2)}x</Text>
       </View>
+      {!useSkull && (
       <View style={styles.row}>
         <Text style={[styles.label, { color: colors.textPrimary }]}>Pitch</Text>
         <Slider
@@ -123,8 +197,45 @@ export function SpeechScreen() {
         />
         <Text style={[styles.value, { color: colors.textSecondary }]}>{pitch.toFixed(2)}x</Text>
       </View>
+      )}
 
-      {voices.length > 0 && (
+      {useSkull && (
+        <>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Voice</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.voiceRow}>
+            {TTS_VOICES.map((v) => (
+              <Pressable
+                key={v}
+                style={[styles.voiceChip, { backgroundColor: colors.surface }, skullVoice === v && { backgroundColor: colors.accent }]}
+                onPress={() => changeSkullVoice(v)}
+              >
+                <Text
+                  style={[
+                    styles.voiceChipText,
+                    { color: colors.textPrimary },
+                    skullVoice === v && { color: colors.accentText, fontWeight: '700' },
+                  ]}
+                >
+                  {v}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>OpenAI API key</Text>
+          <TextInput
+            style={[styles.keyInput, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
+            value={apiKey}
+            onChangeText={changeApiKey}
+            placeholder="sk-…"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+          />
+        </>
+      )}
+
+      {!useSkull && voices.length > 0 && (
         <>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Voice</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.voiceRow}>
@@ -169,6 +280,19 @@ export function SpeechScreen() {
 
       <View style={[styles.puppetRow, { backgroundColor: colors.surface }]}>
         <View style={{ flex: 1 }}>
+          <Text style={[styles.puppetLabel, { color: colors.textPrimary }]}>Play through skull speaker</Text>
+          <Text style={[styles.hint, { color: colors.textMuted }]}>
+            Generates speech with OpenAI, uploads it to the skull and plays it
+            on its amp, with the jaw following the real audio. Off plays on
+            this phone instead.
+          </Text>
+        </View>
+        <Switch value={useSkull} onValueChange={changeUseSkull} trackColor={{ true: colors.accent }} />
+      </View>
+
+      {!useSkull && (
+      <View style={[styles.puppetRow, { backgroundColor: colors.surface }]}>
+        <View style={{ flex: 1 }}>
           <Text style={[styles.puppetLabel, { color: colors.textPrimary }]}>Puppet skull jaw while speaking</Text>
           <Text style={[styles.hint, { color: colors.textMuted }]}>
             Sends jaw servo pulses to Skelly over the control API in time with
@@ -177,12 +301,14 @@ export function SpeechScreen() {
         </View>
         <Switch value={puppetJaw} onValueChange={setPuppetJaw} trackColor={{ true: colors.accent }} />
       </View>
+      )}
 
       <Pressable
-        style={[styles.speakButton, { backgroundColor: colors.accent }, speaking && { backgroundColor: colors.danger }]}
-        onPress={speaking ? stop : speak}
+        style={[styles.speakButton, { backgroundColor: colors.accent }, active && { backgroundColor: colors.danger }, !!busy && { opacity: 0.6 }]}
+        disabled={!!busy}
+        onPress={active ? stop : speak}
       >
-        <Text style={styles.speakButtonText}>{speaking ? 'Stop' : 'Speak'}</Text>
+        <Text style={styles.speakButtonText}>{buttonLabel}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -222,6 +348,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  keyInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 15 },
   hint: { fontSize: 12, marginTop: 4, lineHeight: 16 },
   speakButton: {
     marginTop: 24,

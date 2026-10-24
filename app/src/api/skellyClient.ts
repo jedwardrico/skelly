@@ -206,6 +206,23 @@ export class SkellyClient {
     return body.file as string;
   }
 
+  // Same endpoint as uploadFile, for audio already in memory (e.g. freshly
+  // synthesized TTS) rather than a picked file on disk.
+  async uploadBlob(blob: Blob, name: string): Promise<string> {
+    const form = new FormData();
+    form.append('file', blob, name);
+
+    const res = await fetch(`${this.baseUrl}/api/upload`, {
+      method: 'POST',
+      body: form,
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.ok) {
+      throw new Error(body?.error ?? `HTTP ${res.status}`);
+    }
+    return body.file as string;
+  }
+
   // Prefers the WebSocket (instant, no extra round trip) and falls back to
   // REST if it isn't connected yet.
   async play(file: string): Promise<boolean> {

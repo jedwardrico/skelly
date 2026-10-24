@@ -25,23 +25,21 @@ WiFi, plus on-device text-to-speech.
   puppeteering in the Speech tab. Also has the dark mode toggle - the app
   defaults to dark, and the choice is remembered locally (`AsyncStorage`).
 
-## Why TTS plays through the phone, not the skull
+## Speech: skull speaker vs. phone speaker
 
-The firmware only plays pre-baked `.mp3`/`.wav` files today - there's no
-endpoint yet for streaming freshly-generated audio straight to the skull's
-MAX98357A amp (tracked in `../docs/API.md` and `../docs/ARCHITECTURE.md`'s
-roadmap sections). An upload endpoint (`POST /api/upload`, used by the
-Control tab's "Upload clip" button) does exist for pushing an
-already-recorded clip over WiFi, but on-device TTS output can't be captured
-as a file to upload, so live typed speech still plays from the phone with
-the jaw puppeted along - see the Control tab's upload button if you'd rather
-record a line yourself and have the skull play it directly.
+The Speech tab's "Play through skull speaker" switch (on by default) sends
+the typed text to OpenAI's TTS API (`gpt-4o-mini-tts`, key entered in the
+tab and stored locally in `AsyncStorage`), uploads the returned mp3 to the
+skull as `speech.mp3` (`POST /api/upload`), and triggers `play`. The audio
+comes out of the MAX98357A amp and the existing audio-envelope jaw sync
+(`lib/AudioPlayer/JawSyncOutput`) drives the jaw from the real waveform.
+The phone needs internet for the TTS call as well as a route to the skull.
 
-Once a streaming endpoint exists, the natural upgrade for the Speech tab is
-to synthesize audio (on-device or via a cloud TTS API), push it to the
-skull, and let the existing audio-envelope jaw sync
-(`lib/AudioPlayer/JawSyncOutput`) drive the jaw from the real waveform
-instead of word-boundary pulses.
+With the switch off, the app falls back to `expo-speech` on the phone's own
+speaker, since on-device TTS can't be captured as a file to upload; the jaw
+is puppeted with word-boundary pulses instead. True streaming (starting
+playback before the clip is fully generated) is still a roadmap item - see
+`../docs/ARCHITECTURE.md`.
 
 ## Project layout
 
