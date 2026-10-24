@@ -20,6 +20,11 @@ onboard 3.3V regulator:
   breakout board's screw terminals, sized for however many servos you're
   driving simultaneously (a small skull rig of 3-5 micro servos is usually
   fine on a 2-3A 5V supply; add margin if you add more).
+- If running from a battery, put a toggle (SPST) switch in series with the
+  battery's positive lead, between the battery and the ESP32 breakout board's
+  power input, so the whole rig can be switched on and off. Switch the
+  positive side only; leave the battery negative wired straight to the common
+  ground.
 - Power the MAX98357A from 5V (`Vin`) for full volume headroom; it'll also run
   off 3.3V at reduced output.
 - Common ground everything: ESP32 GND, the breakout board's power-rail GND,
