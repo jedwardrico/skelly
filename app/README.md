@@ -20,6 +20,9 @@ WiFi, plus on-device text-to-speech.
   phone's own text-to-speech engine (`expo-speech`), which puppets the jaw
   servo in time with the phone's speech via the control API. Rate, voice and
   (phone only) pitch controls.
+- **Logs** - live view of the skull's serial output (what `pio device monitor`
+  shows), streamed over the WebSocket; handy for debugging uploads and WiFi
+  without a USB cable.
 - **Setup** - the ElevenLabs API key (saved on the phone) and per-servo
   zero/rest calibration: jog a servo to where it should
   sit at rest and save it as that servo's "zero" (persisted on the skull
@@ -47,7 +50,7 @@ playback before the clip is fully generated) is still a roadmap item - see
 ## Project layout
 
 ```
-App.tsx                    tab shell (Connect / Control / Speech / Setup)
+App.tsx                    tab shell (Connect / Control / Speech / Setup / Logs)
 src/api/skellyClient.ts    REST + WebSocket client for the control API
 src/api/servoConfig.ts     servo names/ranges, mirrors include/Config.h
 src/context/SkellyContext  shared connection + live status state (incl. servoZero)

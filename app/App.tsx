@@ -7,14 +7,16 @@ import { ConnectScreen } from './src/screens/ConnectScreen';
 import { ControlScreen } from './src/screens/ControlScreen';
 import { SpeechScreen } from './src/screens/SpeechScreen';
 import { ServoConfigScreen } from './src/screens/ServoConfigScreen';
+import { LogsScreen } from './src/screens/LogsScreen';
 
-type Tab = 'connect' | 'control' | 'speech' | 'setup';
+type Tab = 'connect' | 'control' | 'speech' | 'setup' | 'logs';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'connect', label: 'Connect' },
   { key: 'control', label: 'Control' },
   { key: 'speech', label: 'Speech' },
   { key: 'setup', label: 'Setup' },
+  { key: 'logs', label: 'Logs' },
 ];
 
 function AppShell() {
@@ -28,6 +30,7 @@ function AppShell() {
         {tab === 'control' && <ControlScreen />}
         {tab === 'speech' && <SpeechScreen />}
         {tab === 'setup' && <ServoConfigScreen />}
+        {tab === 'logs' && <LogsScreen />}
       </View>
       <View style={[styles.tabBar, { borderTopColor: colors.border, backgroundColor: colors.background }]}>
         {TABS.map((t) => (

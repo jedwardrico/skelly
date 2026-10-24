@@ -100,6 +100,17 @@ Play it afterwards the same way as a clip pushed via `uploadfs`: `POST
 Clears a persisted override, reverting to the compiled-in `restAngle` from
 `Config.h`. Response: `{"ok":true}` or `{"ok":false,"error":"..."}`.
 
+### `GET /api/logs`
+
+The last ~100 lines of the firmware's serial output (everything logged via
+`SkellyLog`, which also still prints to USB serial). Optional `?since=<seq>`
+returns only lines newer than that sequence number. `seq` counts lines since
+boot, so it restarts at 1 after a reboot.
+
+```json
+{ "latest": 152, "lines": [{ "seq": 151, "text": "[ControlAPI] upload starting -> /audio/speech.mp3" }] }
+```
+
 ## WebSocket (`/ws`)
 
 Same command set as REST, sent as JSON text frames, plus unsolicited status
@@ -128,6 +139,10 @@ animate a "talking" indicator or mouth graphic without polling:
   "servoZero": { "jaw": 4, "eye_pan": 90, ... }
 }
 ```
+
+While a client is connected, each new serial log line is also pushed as
+`{ "type": "log", "seq": 152, "text": "..." }`. Fetch `GET /api/logs` after
+connecting for the backlog and de-dupe against these by `seq`.
 
 `servoZero` in the status payload is each servo's current effective rest
 angle (persisted override if one was set via `/api/servo/zero`, otherwise

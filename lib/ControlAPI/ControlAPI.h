@@ -7,6 +7,7 @@
 #include <LittleFS.h>
 #include <functional>
 #include "Config.h"
+#include "SkellyLog.h"
 
 // WiFi + JSON control surface for Skelly. This is the integration point for
 // the future React Native app / web page: everything it can do is exposed
@@ -45,6 +46,7 @@ private:
   AsyncWebServer server{CONTROL_API_PORT};
   AsyncWebSocket ws{"/ws"};
   uint32_t lastBroadcastMs = 0;
+  uint32_t lastLogSeq = 0;
 
   ServoCommandHandler servoHandler;
   ServoZeroSetHandler servoZeroSetHandler;
@@ -66,6 +68,7 @@ private:
                       AwsEventType type, void *arg, uint8_t *data, size_t len);
   void handleCommand(const JsonObject &cmd, JsonDocument &replyDoc);
   void buildStatus(JsonObject &out);
+  void broadcastLogs();
   void handleUpload(AsyncWebServerRequest *request, String filename, size_t index,
                      uint8_t *data, size_t len, bool final);
 };
