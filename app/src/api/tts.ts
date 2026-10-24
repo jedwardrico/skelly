@@ -3,6 +3,9 @@
 // skull's amp means getting real audio bytes from somewhere we can upload to
 // the ESP32 (see SkellyClient.uploadBlob).
 
+// AsyncStorage key the Setup tab saves the API key under and Speech reads.
+export const TTS_API_KEY_STORAGE_KEY = 'skelly:speech:elevenLabsKey';
+
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
 export interface TtsVoice {

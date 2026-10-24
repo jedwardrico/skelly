@@ -17,12 +17,11 @@ import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
-import { listVoices, synthesizeSpeech, TtsVoice } from '../api/tts';
+import { listVoices, synthesizeSpeech, TTS_API_KEY_STORAGE_KEY, TtsVoice } from '../api/tts';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
 
 const SKULL_STORAGE_KEY = 'skelly:speech:skull';
-const API_KEY_STORAGE_KEY = 'skelly:speech:elevenLabsKey';
 const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
 // Fixed name so repeated speech overwrites one clip instead of filling LittleFS.
 const SPEECH_CLIP = 'speech.mp3';
@@ -50,11 +49,11 @@ export function SpeechScreen() {
   const [busy, setBusy] = useState<'synthesizing' | 'uploading' | null>(null);
 
   useEffect(() => {
-    AsyncStorage.multiGet([SKULL_STORAGE_KEY, API_KEY_STORAGE_KEY, SKULL_VOICE_STORAGE_KEY])
+    AsyncStorage.multiGet([SKULL_STORAGE_KEY, TTS_API_KEY_STORAGE_KEY, SKULL_VOICE_STORAGE_KEY])
       .then((pairs) => {
         const saved = Object.fromEntries(pairs);
         if (saved[SKULL_STORAGE_KEY] != null) setUseSkull(saved[SKULL_STORAGE_KEY] === '1');
-        if (saved[API_KEY_STORAGE_KEY]) setApiKey(saved[API_KEY_STORAGE_KEY]!);
+        if (saved[TTS_API_KEY_STORAGE_KEY]) setApiKey(saved[TTS_API_KEY_STORAGE_KEY]!);
         if (saved[SKULL_VOICE_STORAGE_KEY]) setSkullVoice(saved[SKULL_VOICE_STORAGE_KEY]!);
       })
       .catch(() => {});
@@ -63,10 +62,6 @@ export function SpeechScreen() {
   const changeUseSkull = (v: boolean) => {
     setUseSkull(v);
     AsyncStorage.setItem(SKULL_STORAGE_KEY, v ? '1' : '0').catch(() => {});
-  };
-  const changeApiKey = (v: string) => {
-    setApiKey(v);
-    AsyncStorage.setItem(API_KEY_STORAGE_KEY, v).catch(() => {});
   };
   const changeSkullVoice = (v: string) => {
     setSkullVoice(v);
@@ -124,7 +119,7 @@ export function SpeechScreen() {
   // phone-side puppeteering is needed on this path.
   const speakOnSkull = async () => {
     if (!apiKey.trim()) {
-      Alert.alert('API key needed', 'Enter an ElevenLabs API key to generate speech for the skull.');
+      Alert.alert('API key needed', 'Add your ElevenLabs API key in the Setup tab to generate speech for the skull.');
       return;
     }
     if (!skullVoice) {
@@ -257,17 +252,11 @@ export function SpeechScreen() {
               Couldn't load your voices ({voicesError}). Using a default voice instead.
             </Text>
           )}
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ElevenLabs API key</Text>
-          <TextInput
-            style={[styles.keyInput, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
-            value={apiKey}
-            onChangeText={changeApiKey}
-            placeholder="xi-api-key"
-            placeholderTextColor={colors.textMuted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-          />
+          {!apiKey.trim() && (
+            <Text style={[styles.hint, { color: colors.textMuted }]}>
+              Add your ElevenLabs API key in the Setup tab to use the skull speaker.
+            </Text>
+          )}
         </>
       )}
 
@@ -384,7 +373,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
-  keyInput: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 15 },
   hint: { fontSize: 12, marginTop: 4, lineHeight: 16 },
   speakButton: {
     marginTop: 24,
