@@ -1,37 +1,52 @@
-// Cloud text-to-speech (OpenAI). expo-speech can only play through the
+// Cloud text-to-speech (ElevenLabs). expo-speech can only play through the
 // phone's own speaker and can't hand back the audio, so playing through the
 // skull's amp means getting real audio bytes from somewhere we can upload to
 // the ESP32 (see SkellyClient.uploadBlob).
 
-export const TTS_VOICES = ['alloy', 'ash', 'coral', 'echo', 'fable', 'onyx', 'nova', 'sage', 'shimmer'] as const;
-export type TtsVoice = (typeof TTS_VOICES)[number];
+const API_BASE = 'https://api.elevenlabs.io/v1';
 
-const TTS_URL = 'https://api.openai.com/v1/audio/speech';
+export interface TtsVoice {
+  id: string;
+  name: string;
+}
 
-// Returns an mp3 blob. `speed` is OpenAI's 0.25-4.0 playback speed.
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => ({}));
+  const detail = body?.detail;
+  return (typeof detail === 'string' ? detail : detail?.message) ?? `${fallback} (HTTP ${res.status})`;
+}
+
+// Voices the account can use. On the free tier that's the premade voices.
+export async function listVoices(apiKey: string): Promise<TtsVoice[]> {
+  const res = await fetch(`${API_BASE}/voices`, { headers: { 'xi-api-key': apiKey } });
+  if (!res.ok) throw new Error(await errorMessage(res, 'Could not load voices'));
+  const body = await res.json();
+  return (body.voices ?? []).map((v: { voice_id: string; name: string }) => ({
+    id: v.voice_id,
+    name: v.name,
+  }));
+}
+
+// Returns an mp3 blob. `speed` is clamped to ElevenLabs' 0.7-1.2 range.
 export async function synthesizeSpeech(
   apiKey: string,
   text: string,
-  voice: TtsVoice,
+  voiceId: string,
   speed: number,
 ): Promise<Blob> {
-  const res = await fetch(TTS_URL, {
+  const res = await fetch(`${API_BASE}/text-to-speech/${voiceId}?output_format=mp3_44100_64`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      'xi-api-key': apiKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini-tts',
-      input: text,
-      voice,
-      speed,
-      response_format: 'mp3',
+      text,
+      // Flash costs half the credits of the other models on the free tier.
+      model_id: 'eleven_flash_v2_5',
+      voice_settings: { speed: Math.min(1.2, Math.max(0.7, speed)) },
     }),
   });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body?.error?.message ?? `TTS request failed (HTTP ${res.status})`);
-  }
+  if (!res.ok) throw new Error(await errorMessage(res, 'TTS request failed'));
   return res.blob();
 }
