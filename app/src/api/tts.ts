@@ -19,15 +19,18 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
   return (typeof detail === 'string' ? detail : detail?.message) ?? `${fallback} (HTTP ${res.status})`;
 }
 
-// Voices the account can use. On the free tier that's the premade voices.
+// Free-tier voices only: the premade ones. Library, cloned and generated voices
+// (which need a paid plan to use via the API) are filtered out.
 export async function listVoices(apiKey: string): Promise<TtsVoice[]> {
   const res = await fetch(`${API_BASE}/voices`, { headers: { 'xi-api-key': apiKey } });
   if (!res.ok) throw new Error(await errorMessage(res, 'Could not load voices'));
   const body = await res.json();
-  return (body.voices ?? []).map((v: { voice_id: string; name: string }) => ({
-    id: v.voice_id,
-    name: v.name,
-  }));
+  return (body.voices ?? [])
+    .filter((v: { category?: string }) => v.category === 'premade')
+    .map((v: { voice_id: string; name: string }) => ({
+      id: v.voice_id,
+      name: v.name,
+    }));
 }
 
 // Returns an mp3 blob. `speed` is clamped to ElevenLabs' 0.7-1.2 range.
