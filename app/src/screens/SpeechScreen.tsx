@@ -26,6 +26,9 @@ const API_KEY_STORAGE_KEY = 'skelly:speech:elevenLabsKey';
 const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
 // Fixed name so repeated speech overwrites one clip instead of filling LittleFS.
 const SPEECH_CLIP = 'speech.mp3';
+// Used when the key can't list voices (e.g. a restricted key without the
+// voices_read permission) so speech still works. "Rachel" is a premade voice.
+const FALLBACK_VOICES: TtsVoice[] = [{ id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' }];
 
 export function SpeechScreen() {
   const { client, status } = useSkelly();
@@ -43,6 +46,7 @@ export function SpeechScreen() {
   const [apiKey, setApiKey] = useState('');
   const [skullVoice, setSkullVoice] = useState<string | undefined>(undefined);
   const [skullVoices, setSkullVoices] = useState<TtsVoice[]>([]);
+  const [voicesError, setVoicesError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'synthesizing' | 'uploading' | null>(null);
 
   useEffect(() => {
@@ -73,15 +77,22 @@ export function SpeechScreen() {
   useEffect(() => {
     if (!apiKey.trim()) {
       setSkullVoices([]);
+      setVoicesError(null);
       return;
     }
     const timer = setTimeout(() => {
       listVoices(apiKey.trim())
         .then((list) => {
-          setSkullVoices(list);
-          setSkullVoice((cur) => (list.some((v) => v.id === cur) ? cur : list[0]?.id));
+          const usable = list.length > 0 ? list : FALLBACK_VOICES;
+          setVoicesError(null);
+          setSkullVoices(usable);
+          setSkullVoice((cur) => (usable.some((v) => v.id === cur) ? cur : usable[0].id));
         })
-        .catch(() => setSkullVoices([]));
+        .catch((err) => {
+          setVoicesError(err instanceof Error ? err.message : 'Could not load voices');
+          setSkullVoices(FALLBACK_VOICES);
+          setSkullVoice((cur) => cur ?? FALLBACK_VOICES[0].id);
+        });
     }, 600);
     return () => clearTimeout(timer);
   }, [apiKey]);
@@ -117,7 +128,7 @@ export function SpeechScreen() {
       return;
     }
     if (!skullVoice) {
-      Alert.alert('No voice', 'No ElevenLabs voice is loaded yet - check the API key.');
+      Alert.alert('No voice', 'No ElevenLabs voice is selected yet - wait a moment after entering the API key.');
       return;
     }
     try {
@@ -241,6 +252,11 @@ export function SpeechScreen() {
               </Pressable>
             ))}
           </ScrollView>
+          {voicesError && (
+            <Text style={[styles.hint, { color: colors.danger }]}>
+              Couldn't load your voices ({voicesError}). Using a default voice instead.
+            </Text>
+          )}
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ElevenLabs API key</Text>
           <TextInput
             style={[styles.keyInput, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
