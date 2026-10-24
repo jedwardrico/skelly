@@ -114,7 +114,7 @@ export function SpeechScreen() {
     client.setServo('jaw', angle).catch(() => {});
   };
 
-  // Synthesizes with a cloud TTS, uploads the mp3 to the skull and plays it
+  // Synthesizes with ElevenLabs, uploads the mp3 to the skull and plays it
   // there. The firmware's audio-envelope jaw sync drives the jaw, so no
   // phone-side puppeteering is needed on this path.
   const speakOnSkull = async () => {

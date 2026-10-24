@@ -91,7 +91,7 @@ drive it identically. Three speech pipelines are worth planning for:
    (`data/audio/` + `pio run --target uploadfs`) or over WiFi via `POST
    /api/upload` (see `docs/API.md`), then triggers it with `play`.
 2. **App-side TTS (supported today, in `app/`)**: the app synthesizes typed
-   text with a cloud TTS, uploads the mp3 via `POST /api/upload` and plays
+   text with ElevenLabs TTS, uploads the mp3 via `POST /api/upload` and plays
    it on the skull's amp, so the envelope jaw sync applies. Alternatively
    (switch off in the Speech tab) it speaks with the phone's own on-device
    TTS and puppets the jaw with word-boundary pulses - see `app/README.md`.
