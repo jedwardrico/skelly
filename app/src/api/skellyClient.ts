@@ -16,7 +16,16 @@ export interface SkellyStatus {
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
+// One line of the firmware's serial output (see lib/SkellyLog and GET
+// /api/logs). `seq` is a per-boot counter used to de-dupe the REST backlog
+// against lines that also arrived live over the WebSocket.
+export interface LogLine {
+  seq: number;
+  text: string;
+}
+
 type StatusListener = (status: SkellyStatus) => void;
+type LogListener = (line: LogLine) => void;
 type ConnectionListener = (state: ConnectionState, error?: string) => void;
 
 const DEFAULT_STATUS: SkellyStatus = {
@@ -39,6 +48,7 @@ export class SkellyClient {
   private ws: WebSocket | null = null;
   private statusListeners = new Set<StatusListener>();
   private connectionListeners = new Set<ConnectionListener>();
+  private logListeners = new Set<LogListener>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private closedByUser = false;
   private lastStatus: SkellyStatus = DEFAULT_STATUS;
@@ -63,6 +73,11 @@ export class SkellyClient {
   onConnectionChange(listener: ConnectionListener): () => void {
     this.connectionListeners.add(listener);
     return () => this.connectionListeners.delete(listener);
+  }
+
+  onLog(listener: LogListener): () => void {
+    this.logListeners.add(listener);
+    return () => this.logListeners.delete(listener);
   }
 
   private emitStatus(status: SkellyStatus) {
@@ -115,6 +130,9 @@ export class SkellyClient {
             servos: msg.servos ?? {},
             servoZero: msg.servoZero ?? {},
           });
+        } else if (msg.type === 'log' && typeof msg.seq === 'number' && typeof msg.text === 'string') {
+          const line = { seq: msg.seq, text: msg.text };
+          this.logListeners.forEach((l) => l(line));
         }
       } catch {
         // ignore malformed frames
@@ -178,6 +196,12 @@ export class SkellyClient {
       servos: body.servos ?? {},
       servoZero: body.servoZero ?? {},
     };
+  }
+
+  // Recent serial output kept on the device (newest last).
+  async getLogs(): Promise<{ latest: number; lines: LogLine[] }> {
+    const body = await this.request('/api/logs');
+    return { latest: body.latest ?? 0, lines: body.lines ?? [] };
   }
 
   async getFiles(): Promise<string[]> {

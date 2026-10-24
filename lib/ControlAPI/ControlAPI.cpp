@@ -16,30 +16,30 @@ void ControlAPI::begin() {
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   server.begin();
 
-  Serial.println("[ControlAPI] server started on port " + String(CONTROL_API_PORT));
+  SkellyLog.println("[ControlAPI] server started on port " + String(CONTROL_API_PORT));
 }
 
 void ControlAPI::connectWifi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  Serial.printf("[ControlAPI] connecting to WiFi \"%s\"", WIFI_SSID);
+  SkellyLog.printf("[ControlAPI] connecting to WiFi \"%s\"", WIFI_SSID);
   uint32_t start = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
     delay(250);
-    Serial.print(".");
+    SkellyLog.print(".");
   }
-  Serial.println();
+  SkellyLog.println();
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("[ControlAPI] connected, IP = %s\n", WiFi.localIP().toString().c_str());
+    SkellyLog.printf("[ControlAPI] connected, IP = %s\n", WiFi.localIP().toString().c_str());
     return;
   }
 
-  Serial.println("[ControlAPI] WiFi connect failed, starting fallback AP");
+  SkellyLog.println("[ControlAPI] WiFi connect failed, starting fallback AP");
   WiFi.mode(WIFI_AP);
   WiFi.softAP(AP_FALLBACK_SSID, AP_FALLBACK_PASSWORD);
-  Serial.printf("[ControlAPI] AP \"%s\" up, IP = %s\n", AP_FALLBACK_SSID,
+  SkellyLog.printf("[ControlAPI] AP \"%s\" up, IP = %s\n", AP_FALLBACK_SSID,
                 WiFi.softAPIP().toString().c_str());
 }
 
@@ -163,6 +163,26 @@ void ControlAPI::setupRoutes() {
         handleUpload(request, filename, index, data, len, final);
       });
 
+  server.on("/api/logs", HTTP_GET, [](AsyncWebServerRequest *request) {
+    uint32_t since = 0;
+    if (request->hasParam("since")) since = request->getParam("since")->value().toInt();
+
+    std::vector<SkellyLogBuffer::Line> lines;
+    SkellyLog.collectSince(since, lines, LOG_BACKLOG_MAX_LINES);
+
+    JsonDocument doc;
+    doc["latest"] = SkellyLog.latestSeq();
+    JsonArray arr = doc["lines"].to<JsonArray>();
+    for (const auto &l : lines) {
+      JsonObject o = arr.add<JsonObject>();
+      o["seq"] = l.seq;
+      o["text"] = l.text;
+    }
+    String body;
+    serializeJson(doc, body);
+    request->send(200, "application/json", body);
+  });
+
   server.onNotFound([](AsyncWebServerRequest *request) {
     request->send(404, "application/json", "{\"ok\":false,\"error\":\"not found\"}");
   });
@@ -175,7 +195,7 @@ void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, s
     uploadPath = "";
     String safeName = sanitizeAudioFilename(filename);
     if (safeName.isEmpty()) {
-      Serial.printf("[ControlAPI] upload rejected, bad filename \"%s\"\n", filename.c_str());
+      SkellyLog.printf("[ControlAPI] upload rejected, bad filename \"%s\"\n", filename.c_str());
       uploadFailed = true;
       return;
     }
@@ -183,18 +203,18 @@ void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, s
     String path = String(AUDIO_DIR) + "/" + safeName;
     uploadFile = LittleFS.open(path, "w");
     if (!uploadFile) {
-      Serial.printf("[ControlAPI] upload failed to open \"%s\"\n", path.c_str());
+      SkellyLog.printf("[ControlAPI] upload failed to open \"%s\"\n", path.c_str());
       uploadFailed = true;
       return;
     }
     uploadPath = path;
-    Serial.printf("[ControlAPI] upload starting -> %s\n", path.c_str());
+    SkellyLog.printf("[ControlAPI] upload starting -> %s\n", path.c_str());
   }
 
   if (uploadFailed || !uploadFile) return;
 
   if (len && uploadFile.write(data, len) != len) {
-    Serial.println("[ControlAPI] upload write failed");
+    SkellyLog.println("[ControlAPI] upload write failed");
     uploadFailed = true;
     uploadFile.close();
     return;
@@ -202,7 +222,7 @@ void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, s
 
   if (final) {
     uploadFile.close();
-    Serial.printf("[ControlAPI] upload complete -> %s (%u bytes)\n", uploadPath.c_str(),
+    SkellyLog.printf("[ControlAPI] upload complete -> %s (%u bytes)\n", uploadPath.c_str(),
                    (unsigned)(index + len));
   }
 }
@@ -256,9 +276,9 @@ void ControlAPI::handleCommand(const JsonObject &cmd, JsonDocument &replyDoc) {
 void ControlAPI::handleWsEvent(AsyncWebSocket *s, AsyncWebSocketClient *client,
                                 AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
-    Serial.printf("[ControlAPI] ws client #%u connected\n", client->id());
+    SkellyLog.printf("[ControlAPI] ws client #%u connected\n", client->id());
   } else if (type == WS_EVT_DISCONNECT) {
-    Serial.printf("[ControlAPI] ws client #%u disconnected\n", client->id());
+    SkellyLog.printf("[ControlAPI] ws client #%u disconnected\n", client->id());
   } else if (type == WS_EVT_DATA) {
     AwsFrameInfo *info = (AwsFrameInfo *)arg;
     if (!info->final || info->index != 0 || info->len != len || info->opcode != WS_TEXT) {
@@ -278,8 +298,34 @@ void ControlAPI::handleWsEvent(AsyncWebSocket *s, AsyncWebSocketClient *client,
   }
 }
 
+// Pushes log lines written since the last call to every WebSocket client as
+// {"type":"log","seq":N,"text":"..."}. With nobody connected it just skips
+// ahead, so a new client gets the backlog from GET /api/logs rather than a
+// burst of old frames.
+void ControlAPI::broadcastLogs() {
+  if (ws.count() == 0) {
+    lastLogSeq = SkellyLog.latestSeq();
+    return;
+  }
+
+  std::vector<SkellyLogBuffer::Line> lines;
+  if (SkellyLog.collectSince(lastLogSeq, lines, LOG_FRAMES_PER_LOOP) == 0) return;
+
+  for (const auto &l : lines) {
+    JsonDocument doc;
+    doc["type"] = "log";
+    doc["seq"] = l.seq;
+    doc["text"] = l.text;
+    String body;
+    serializeJson(doc, body);
+    ws.textAll(body);
+    lastLogSeq = l.seq;
+  }
+}
+
 void ControlAPI::loop() {
   ws.cleanupClients();
+  broadcastLogs();
 
   uint32_t now = millis();
   if (now - lastBroadcastMs < STATUS_BROADCAST_INTERVAL_MS) return;

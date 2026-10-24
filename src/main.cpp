@@ -32,12 +32,12 @@ static void buildStatus(JsonObject &out) {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("\n[Skelly] booting");
+  SkellyLog.println("\n[Skelly] booting");
 
   servos.begin();
 
   if (!audio.begin()) {
-    Serial.println("[Skelly] audio init failed - continuing without playback");
+    SkellyLog.println("[Skelly] audio init failed - continuing without playback");
   }
 
   controlApi.onPlayCommand([](const String &file) {
@@ -61,10 +61,10 @@ void setup() {
 
 #ifdef ENABLE_BLUEPAD32
   gamepad.begin(&servos, &audio);
-  Serial.println("[Skelly] BluePad32 gamepad support enabled");
+  SkellyLog.println("[Skelly] BluePad32 gamepad support enabled");
 #endif
 
-  Serial.println("[Skelly] ready");
+  SkellyLog.println("[Skelly] ready");
 }
 
 void loop() {

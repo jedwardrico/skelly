@@ -8,9 +8,10 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SkellyClient, SkellyStatus, ConnectionState } from '../api/skellyClient';
+import { SkellyClient, SkellyStatus, ConnectionState, LogLine } from '../api/skellyClient';
 
 const HOST_STORAGE_KEY = 'skelly:host';
+const MAX_LOG_LINES = 500;
 const DEFAULT_HOST = '192.168.1.113'; // Skelly on the home network (fallback AP 192.168.1.113)
 
 interface SkellyContextValue {
@@ -19,6 +20,8 @@ interface SkellyContextValue {
   connectionState: ConnectionState;
   connectionError?: string;
   status: SkellyStatus;
+  logs: LogLine[];
+  clearLogs: () => void;
   client: SkellyClient;
   reconnect: () => void;
 }
@@ -37,6 +40,8 @@ export function SkellyProvider({ children }: { children: React.ReactNode }) {
     servoZero: {},
   });
 
+  const [logs, setLogs] = useState<LogLine[]>([]);
+
   const clientRef = useRef<SkellyClient>(new SkellyClient(DEFAULT_HOST));
 
   useEffect(() => {
@@ -54,7 +59,26 @@ export function SkellyProvider({ children }: { children: React.ReactNode }) {
     const offConn = client.onConnectionChange((state, error) => {
       setConnectionState(state);
       setConnectionError(error);
+      if (state === 'connected') {
+        // Fresh connection (possibly after a reboot, which restarts the
+        // device's line counter): reload the backlog, keeping any live
+        // lines newer than it that arrived while the request was in flight.
+        setLogs([]);
+        client
+          .getLogs()
+          .then(({ latest, lines }) =>
+            setLogs((prev) => [...lines, ...prev.filter((l) => l.seq > latest)].slice(-MAX_LOG_LINES)),
+          )
+          .catch(() => {});
+      }
     });
+    const offLog = client.onLog((line) =>
+      setLogs((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && line.seq <= last.seq) return prev;
+        return [...prev, line].slice(-MAX_LOG_LINES);
+      }),
+    );
 
     client.connectWs();
     AsyncStorage.setItem(HOST_STORAGE_KEY, host).catch(() => {});
@@ -62,6 +86,7 @@ export function SkellyProvider({ children }: { children: React.ReactNode }) {
     return () => {
       offStatus();
       offConn();
+      offLog();
       client.disconnectWs();
     };
   }, [host]);
@@ -69,6 +94,8 @@ export function SkellyProvider({ children }: { children: React.ReactNode }) {
   const setHost = useCallback((next: string) => {
     setHostState(next);
   }, []);
+
+  const clearLogs = useCallback(() => setLogs([]), []);
 
   const reconnect = useCallback(() => {
     clientRef.current.disconnectWs();
@@ -82,10 +109,12 @@ export function SkellyProvider({ children }: { children: React.ReactNode }) {
       connectionState,
       connectionError,
       status,
+      logs,
+      clearLogs,
       client: clientRef.current,
       reconnect,
     }),
-    [host, setHost, connectionState, connectionError, status, reconnect],
+    [host, setHost, connectionState, connectionError, status, logs, clearLogs, reconnect],
   );
 
   return <SkellyContext.Provider value={value}>{children}</SkellyContext.Provider>;

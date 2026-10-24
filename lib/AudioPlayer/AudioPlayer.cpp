@@ -1,5 +1,6 @@
 #include "AudioPlayer.h"
 #include "JawSyncOutput.h"
+#include "SkellyLog.h"
 #include <AudioGeneratorMP3.h>
 #include <AudioGeneratorWAV.h>
 #include <AudioFileSourceLittleFS.h>
@@ -11,7 +12,7 @@ static JawSyncOutput *s_out = nullptr;
 
 bool AudioPlayer::begin() {
   if (!LittleFS.begin(true)) {
-    Serial.println("[AudioPlayer] LittleFS mount failed");
+    SkellyLog.println("[AudioPlayer] LittleFS mount failed");
     return false;
   }
 
@@ -54,7 +55,7 @@ bool AudioPlayer::play(const String &path) {
   stop();
 
   if (!LittleFS.exists(path)) {
-    Serial.printf("[AudioPlayer] file not found: %s\n", path.c_str());
+    SkellyLog.printf("[AudioPlayer] file not found: %s\n", path.c_str());
     return false;
   }
 
@@ -67,13 +68,13 @@ bool AudioPlayer::play(const String &path) {
   } else if (lower.endsWith(".wav")) {
     generator = new AudioGeneratorWAV();
   } else {
-    Serial.printf("[AudioPlayer] unsupported file type: %s\n", path.c_str());
+    SkellyLog.printf("[AudioPlayer] unsupported file type: %s\n", path.c_str());
     cleanup();
     return false;
   }
 
   if (!generator->begin(file, s_out)) {
-    Serial.printf("[AudioPlayer] failed to start: %s\n", path.c_str());
+    SkellyLog.printf("[AudioPlayer] failed to start: %s\n", path.c_str());
     cleanup();
     return false;
   }

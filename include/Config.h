@@ -68,3 +68,5 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 #define WIFI_CONNECT_TIMEOUT_MS 15000
 #define CONTROL_API_PORT 80
 #define STATUS_BROADCAST_INTERVAL_MS 50 // ~20Hz jaw-level updates over WebSocket
+#define LOG_BACKLOG_MAX_LINES 100       // lines returned by GET /api/logs
+#define LOG_FRAMES_PER_LOOP 20          // max "log" WebSocket frames sent per loop()

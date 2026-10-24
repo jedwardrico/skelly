@@ -10,6 +10,7 @@
 // you actually pull in.
 #include <Bluepad32.h>
 #include "Config.h"
+#include "SkellyLog.h"
 
 static ServoController *s_servos = nullptr;
 static AudioPlayer *s_audio = nullptr;
@@ -26,18 +27,18 @@ static const char *CLIP_Y = "/audio/goodbye.mp3";
 static void onConnectedController(ControllerPtr ctl) {
   for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
     if (s_controllers[i] == nullptr) {
-      Serial.printf("[Gamepad] controller connected, slot %d\n", i);
+      SkellyLog.printf("[Gamepad] controller connected, slot %d\n", i);
       s_controllers[i] = ctl;
       return;
     }
   }
-  Serial.println("[Gamepad] no free slot for new controller");
+  SkellyLog.println("[Gamepad] no free slot for new controller");
 }
 
 static void onDisconnectedController(ControllerPtr ctl) {
   for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
     if (s_controllers[i] == ctl) {
-      Serial.printf("[Gamepad] controller disconnected, slot %d\n", i);
+      SkellyLog.printf("[Gamepad] controller disconnected, slot %d\n", i);
       s_controllers[i] = nullptr;
       return;
     }
