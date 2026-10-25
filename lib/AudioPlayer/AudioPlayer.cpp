@@ -16,6 +16,12 @@ bool AudioPlayer::begin() {
     return false;
   }
 
+  // A fresh filesystem (or one flashed from an empty data/audio/) has no
+  // AUDIO_DIR, and LittleFS can't create files inside a missing directory.
+  if (!LittleFS.exists(AUDIO_DIR) && !LittleFS.mkdir(AUDIO_DIR)) {
+    SkellyLog.printf("[AudioPlayer] couldn't create %s\n", AUDIO_DIR);
+  }
+
   s_out = new JawSyncOutput();
   s_out->SetPinout(I2S_BCLK_PIN, I2S_LRC_PIN, I2S_DOUT_PIN);
   s_out->SetOutputModeMono(true);

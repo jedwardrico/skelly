@@ -201,9 +201,11 @@ void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, s
     }
     if (uploadFile) uploadFile.close();
     String path = String(AUDIO_DIR) + "/" + safeName;
+    if (!LittleFS.exists(AUDIO_DIR)) LittleFS.mkdir(AUDIO_DIR);
     uploadFile = LittleFS.open(path, "w");
     if (!uploadFile) {
-      SkellyLog.printf("[ControlAPI] upload failed to open \"%s\"\n", path.c_str());
+      SkellyLog.printf("[ControlAPI] upload failed to open \"%s\" (filesystem full or not mounted?)\n",
+                       path.c_str());
       uploadFailed = true;
       return;
     }
