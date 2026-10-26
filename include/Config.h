@@ -61,8 +61,8 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 // Deeper I2S DMA queue than the library default (5 x 2304 bytes, ~65ms at
 // 44.1kHz stereo) so a busy main loop doesn't underrun the amp. Lower if RAM
 // gets tight.
-// FreeRTOS priority of the audio decode task: above loop() (1) and async_tcp (3),
-// well below WiFi/lwIP. The task sleeps a tick between steps so others still run.
+// FreeRTOS priority of the audio decode task (runs on core 0): below WiFi/lwIP,
+// above everything else. It sleeps a tick between steps so others still run.
 #define AUDIO_TASK_PRIORITY 5
 #define AUDIO_I2S_DMA_BUFFERS 10
 #define AUDIO_I2S_DMA_BUFFER_BYTES 2304
