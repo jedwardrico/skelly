@@ -94,6 +94,8 @@ bool AudioPlayer::begin() {
 #endif
 
   lock = xSemaphoreCreateMutex();
+  cmdMutex = xSemaphoreCreateMutex();
+  cmdDone = xSemaphoreCreateBinary();
   // Core 0, not core 1 where loop() runs: measured, loop() runs flat out on core 1
   // and blocks even a higher-priority task there for ~40ms at a time (servo
   // PWM writes during jaw sync are the suspect), while core 0 is ~97% idle.
@@ -107,9 +109,13 @@ bool AudioPlayer::begin() {
 void AudioPlayer::taskEntry(void *arg) {
   AudioPlayer *self = static_cast<AudioPlayer *>(arg);
   for (;;) {
-    self->pump();
+    if (self->cmd != CMD_NONE) {
+      self->runCommand();
+    } else {
+      self->pump();
+    }
     uint32_t t0 = micros();
-    vTaskDelay(self->playing ? 1 : 20 / portTICK_PERIOD_MS);
+    vTaskDelay(self->playing ? 1 : 5 / portTICK_PERIOD_MS);
     if (self->playing) {
       uint32_t slept = micros() - t0;
       self->sleepCount++;
@@ -167,18 +173,39 @@ void AudioPlayer::cleanup() {
 }
 
 bool AudioPlayer::play(const String &path) {
-  if (!lock) return false;
-  xSemaphoreTake(lock, portMAX_DELAY);
-  bool ok = false;
-  cleanup();
+  return runOnAudioTask(CMD_PLAY, path);
+}
 
-  if (!LittleFS.exists(path)) {
-    SkellyLog.printf("[AudioPlayer] file not found: %s\n", path.c_str());
-  } else {
-    ok = startLocked(path);
+bool AudioPlayer::runOnAudioTask(Cmd c, const String &path) {
+  if (!cmdMutex || !cmdDone) return false;
+  xSemaphoreTake(cmdMutex, portMAX_DELAY);
+  xSemaphoreTake(cmdDone, 0); // drop a stale completion from a timed-out call
+  cmdPath = path;
+  cmdResult = false;
+  cmd = c;
+  bool finished = xSemaphoreTake(cmdDone, pdMS_TO_TICKS(3000)) == pdTRUE;
+  bool ok = finished && cmdResult;
+  xSemaphoreGive(cmdMutex);
+  return ok;
+}
+
+// Runs on the audio task: stop whatever is playing, then start cmdPath if asked.
+void AudioPlayer::runCommand() {
+  xSemaphoreTake(lock, portMAX_DELAY);
+  cleanup();
+  bool ok = true;
+  if (cmd == CMD_PLAY) {
+    if (!LittleFS.exists(cmdPath)) {
+      SkellyLog.printf("[AudioPlayer] file not found: %s\n", cmdPath.c_str());
+      ok = false;
+    } else {
+      ok = startLocked(cmdPath);
+    }
   }
   xSemaphoreGive(lock);
-  return ok;
+  cmdResult = ok;
+  cmd = CMD_NONE;
+  xSemaphoreGive(cmdDone);
 }
 
 // Starts playback of path; caller holds lock and has already cleaned up.
@@ -221,10 +248,7 @@ bool AudioPlayer::startLocked(const String &path) {
 }
 
 void AudioPlayer::stop() {
-  if (!lock) return;
-  xSemaphoreTake(lock, portMAX_DELAY);
-  cleanup();
-  xSemaphoreGive(lock);
+  runOnAudioTask(CMD_STOP, String());
 }
 
 String AudioPlayer::currentFile() const {

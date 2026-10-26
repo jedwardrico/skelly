@@ -50,6 +50,8 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 
 // Which named channel the audio-envelope jaw sync drives.
 #define JAW_SERVO_NAME "jaw"
+// Minimum gap between audio-driven jaw writes (each servo write blocks its core ~40ms).
+#define JAW_UPDATE_MIN_INTERVAL_MS 60
 
 // ---------------------------------------------------------------------------
 // Audio

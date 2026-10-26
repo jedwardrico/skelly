@@ -44,6 +44,19 @@ private:
   String currentPath;
   SemaphoreHandle_t lock = nullptr; // guards file/generator/currentPath between the audio task and callers
   volatile bool playing = false;
+
+  // play()/stop() are executed by the audio task, not the caller. The I2S
+  // driver attaches its interrupt to the core that creates the channel; callers
+  // run on core 1 (web server, loop()), where servo writes block interrupts for
+  // ~40ms, which starved the I2S refill and played 44.1 kHz at under half speed.
+  enum Cmd : uint8_t { CMD_NONE, CMD_PLAY, CMD_STOP };
+  volatile Cmd cmd = CMD_NONE;
+  String cmdPath;
+  volatile bool cmdResult = false;
+  SemaphoreHandle_t cmdMutex = nullptr; // serializes callers
+  SemaphoreHandle_t cmdDone = nullptr;  // audio task -> caller
+  bool runOnAudioTask(Cmd c, const String &path);
+  void runCommand();
   uint32_t playStartMs = 0;
   uint32_t lastLoopMs = 0;
   uint32_t maxLoopGapMs = 0;

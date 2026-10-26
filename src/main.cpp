@@ -108,7 +108,17 @@ void loop() {
     }
     if (jaw) {
       float angle = jaw->minAngle + level * (jaw->maxAngle - jaw->minAngle);
-      servos.setAngle(JAW_SERVO_NAME, angle);
+      // A servo write blocks this core for ~40ms, so cap the jaw to ~16 updates/s
+      // and ignore sub-degree changes; plenty for a mouth, and it keeps loop()
+      // (and everything sharing its core) responsive.
+      static uint32_t lastJawMs = 0;
+      static float lastJawAngle = -1000.0f;
+      uint32_t nowMs = millis();
+      if (nowMs - lastJawMs >= JAW_UPDATE_MIN_INTERVAL_MS && fabsf(angle - lastJawAngle) >= 1.0f) {
+        servos.setAngle(JAW_SERVO_NAME, angle);
+        lastJawMs = nowMs;
+        lastJawAngle = angle;
+      }
     }
   }
   lt.jawUs += micros() - t;
