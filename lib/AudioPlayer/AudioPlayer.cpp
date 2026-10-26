@@ -39,9 +39,9 @@ bool AudioPlayer::begin() {
 #endif
 
   lock = xSemaphoreCreateMutex();
-  // Core 1 (same as loop()) at a priority above it so a slow loop() pass can't
-  // delay a refill; the task sleeps a tick between steps so loop() still runs.
-  xTaskCreatePinnedToCore(taskEntry, "audio", 10240, this, 2, nullptr, 1);
+  // Core 1 (same as loop()) at a priority above loop() and the web server's
+  // async_tcp task (3) so neither can delay a refill; the task sleeps a tick between steps so loop() still runs.
+  xTaskCreatePinnedToCore(taskEntry, "audio", 10240, this, AUDIO_TASK_PRIORITY, nullptr, 1);
 
   return true;
 }
@@ -50,7 +50,14 @@ void AudioPlayer::taskEntry(void *arg) {
   AudioPlayer *self = static_cast<AudioPlayer *>(arg);
   for (;;) {
     self->pump();
+    uint32_t t0 = micros();
     vTaskDelay(self->playing ? 1 : 20 / portTICK_PERIOD_MS);
+    if (self->playing) {
+      uint32_t slept = micros() - t0;
+      self->sleepCount++;
+      self->sleepUsTotal += slept;
+      if (slept > self->sleepUsMax) self->sleepUsMax = slept;
+    }
   }
 }
 
@@ -79,6 +86,12 @@ void AudioPlayer::cleanup() {
         "[AudioPlayer] timing: cpu %u MHz, %u loop calls, %u ms in generator, %u ms elsewhere, %u rejected samples\n",
         (unsigned)getCpuFrequencyMhz(), (unsigned)loopCalls, (unsigned)(generatorUs / 1000),
         (unsigned)(wallMs - generatorUs / 1000), (unsigned)s_out->rejected);
+    // A 1-tick sleep should last ~1 ms. Much longer means the audio task isn't
+    // getting the CPU back (starved by a higher-priority task) or the tick is slow.
+    SkellyLog.printf("[AudioPlayer] task: tick %u Hz, prio %u, %u sleeps, avg %u us, max %u us\n",
+                     (unsigned)configTICK_RATE_HZ, (unsigned)uxTaskPriorityGet(nullptr),
+                     (unsigned)sleepCount, (unsigned)(sleepCount ? sleepUsTotal / sleepCount : 0),
+                     (unsigned)sleepUsMax);
   }
   if (generator) {
     generator->stop();
@@ -133,6 +146,7 @@ bool AudioPlayer::startLocked(const String &path) {
   maxLoopGapMs = 0;
   loopCalls = 0;
   generatorUs = 0;
+  sleepCount = sleepUsTotal = sleepUsMax = 0;
   s_out->rejected = 0;
 
   if (!generator->begin(file, s_out)) {
