@@ -58,6 +58,13 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 // 0.0-1.0. MAX98357A has no analog volume pin, so gain is applied in software.
 #define AUDIO_DEFAULT_GAIN 0.6f
 
+// MP3 decoding needs slack: read-ahead bytes between LittleFS and the decoder,
+// and a deeper I2S DMA queue (library default is 5 x 2304 bytes, ~65ms at
+// 44.1kHz stereo). Raise these if speech still stutters, lower if RAM gets tight.
+#define AUDIO_FILE_BUFFER_BYTES 16384
+#define AUDIO_I2S_DMA_BUFFERS 10
+#define AUDIO_I2S_DMA_BUFFER_BYTES 2304
+
 // Jaw envelope follower: higher = snappier/twitchier, lower = smoother/laggier.
 #define JAW_ENVELOPE_ATTACK 0.35f
 #define JAW_ENVELOPE_RELEASE 0.08f
