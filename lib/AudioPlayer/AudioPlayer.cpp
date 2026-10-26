@@ -11,6 +11,11 @@ volatile float g_jawEnvelope = 0.0f;
 
 static JawSyncOutput *s_out = nullptr;
 
+// Decoder warnings/errors (e.g. MP3 sync lost, bad frame) land in the log.
+static void decoderStatus(void *, int code, const char *msg) {
+  SkellyLog.printf("[AudioPlayer] decoder: %d %s\n", code, msg);
+}
+
 bool AudioPlayer::begin() {
   if (!LittleFS.begin(true)) {
     SkellyLog.println("[AudioPlayer] LittleFS mount failed");
@@ -46,6 +51,16 @@ float AudioPlayer::jawLevel() const {
 }
 
 void AudioPlayer::cleanup() {
+  if (generator && s_out) {
+    // If wall-clock time is well above audio time, the decoder couldn't keep
+    // the I2S queue full - that's what garbled playback sounds like.
+    uint32_t wallMs = millis() - playStartMs;
+    uint32_t audioMs = s_out->rate > 0 ? (uint32_t)((uint64_t)s_out->samplesConsumed * 1000 / s_out->rate) : 0;
+    SkellyLog.printf(
+        "[AudioPlayer] done %s: %u ms audio @ %d Hz in %u ms wall, longest loop gap %u ms, free heap %u, free psram %u\n",
+        currentPath.c_str(), (unsigned)audioMs, s_out->rate, (unsigned)wallMs,
+        (unsigned)maxLoopGapMs, (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getFreePsram());
+  }
   if (generator) {
     generator->stop();
     delete generator;
@@ -90,6 +105,12 @@ bool AudioPlayer::play(const String &path) {
   // Read ahead so the decoder always finds its next frame in RAM.
   buffered = new AudioFileSourceBuffer(file, AUDIO_FILE_BUFFER_BYTES);
 
+  generator->RegisterStatusCB(decoderStatus, nullptr);
+  s_out->samplesConsumed = 0;
+  s_out->rate = 0;
+  playStartMs = lastLoopMs = millis();
+  maxLoopGapMs = 0;
+
   if (!generator->begin(buffered, s_out)) {
     SkellyLog.printf("[AudioPlayer] failed to start: %s\n", path.c_str());
     cleanup();
@@ -110,6 +131,10 @@ bool AudioPlayer::isPlaying() const {
 
 void AudioPlayer::loop() {
   if (!generator) return;
+
+  uint32_t now = millis();
+  if (now - lastLoopMs > maxLoopGapMs) maxLoopGapMs = now - lastLoopMs;
+  lastLoopMs = now;
 
   if (generator->isRunning()) {
     if (!generator->loop()) {
