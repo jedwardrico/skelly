@@ -43,6 +43,19 @@ function normalizeHost(host: string): string {
     : `http://${trimmed}`;
 }
 
+// Reads a local file:// (or content://) URI into a Blob. XMLHttpRequest is used
+// because it can load local URIs and hand back a Blob on React Native.
+function readFileAsBlob(uri: string): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response as Blob);
+    xhr.onerror = () => reject(new Error('Could not read the selected file'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri);
+    xhr.send();
+  });
+}
+
 export class SkellyClient {
   private baseUrl: string;
   private ws: WebSocket | null = null;
@@ -212,22 +225,13 @@ export class SkellyClient {
   // Pushes a recorded clip to the skull's LittleFS over WiFi (see
   // POST /api/upload in docs/API.md) instead of `pio run --target uploadfs`
   // over USB. `name` must end in .mp3/.wav; the firmware sanitizes it and
-  // writes it into AUDIO_DIR, overwriting any existing file of that name.
-  async uploadFile(uri: string, name: string, mimeType: string): Promise<string> {
-    const form = new FormData();
-    // React Native's fetch/FormData accepts this {uri,name,type} shape in
-    // place of a Blob for a file picked via expo-document-picker.
-    form.append('file', { uri, name, type: mimeType } as unknown as Blob);
-
-    const res = await fetch(`${this.baseUrl}/api/upload`, {
-      method: 'POST',
-      body: form,
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok || !body.ok) {
-      throw new Error(body?.error ?? `HTTP ${res.status}`);
-    }
-    return body.file as string;
+  // writes it into AUDIO_DIR, overwriting any existing file of the same name.
+  //
+  // Expo's fetch rejects React Native's `{uri, name, type}` FormData parts
+  // ("Unsupported FormDataPart implementation") and only takes real Blobs, so
+  // the picked file is read into a Blob first.
+  async uploadFile(uri: string, name: string, _mimeType?: string): Promise<string> {
+    return this.uploadBlob(await readFileAsBlob(uri), name);
   }
 
   // Same endpoint as uploadFile, for audio already in memory (e.g. freshly
