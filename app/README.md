@@ -9,21 +9,23 @@ WiFi, plus on-device text-to-speech.
   monitor at boot, or `192.168.1.113` if it's hosting its own `Skelly-Setup`
   fallback AP). Connection state and live status stream over the `/ws`
   WebSocket, REST is used as a fallback (see `../docs/API.md`).
-- **Control** - see what's playing and the live jaw level, play/stop the
-  speech clips already on the skull's LittleFS (`data/audio/`), upload a
-  recorded `.mp3`/`.wav` clip from the phone straight to the skull over WiFi
-  (`POST /api/upload`, no USB/`uploadfs` needed), and jog the jaw/eye
-  servos with sliders.
+- **Control** - see what's playing and the live jaw level (with a Stop
+  button), and jog the jaw/eye servos with sliders.
 - **Speech** - type text and have Skelly say it. By default the text is
-  turned into speech with ElevenLabs (`eleven_v4`), uploaded to the skull and
-  played on its speaker with the jaw following the audio; or switch to the
-  phone's own text-to-speech engine (`expo-speech`), which puppets the jaw
-  servo in time with the phone's speech via the control API. Rate, voice and
-  (phone only) pitch controls.
+  turned into speech with ElevenLabs (`eleven_v4`, searchable voice picker
+  that defaults to Gork), uploaded to the skull and played on its speaker with
+  the jaw following the audio; or, if you switch it off in Setup, the phone's
+  own text-to-speech engine (`expo-speech`) is used and puppets the jaw servo
+  in time with the phone's speech via the control API. Rate, voice and (phone
+  only) pitch controls. The tab also holds the skull's stored speech clips:
+  play them, refresh the list, or upload a recorded `.mp3`/`.wav` straight
+  to the skull over WiFi (`POST /api/upload`, no USB/`uploadfs` needed).
 - **Logs** - live view of the skull's serial output (what `pio device monitor`
   shows), streamed over the WebSocket; handy for debugging uploads and WiFi
   without a USB cable.
-- **Setup** - the ElevenLabs API key (saved on the phone) and per-servo
+- **Setup** - the "play through skull speaker" switch, the ElevenLabs API
+  key (saved on the phone), a no-credit audio test (uploads and plays a
+  generated tone and verifies the transfer), and per-servo
   zero/rest calibration: jog a servo to where it should
   sit at rest and save it as that servo's "zero" (persisted on the skull
   itself via `POST /api/servo/zero`, survives reboot), or reset back to the

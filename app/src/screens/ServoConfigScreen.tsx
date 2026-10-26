@@ -7,7 +7,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST, VISIBLE_SERVO_LIST } from '../api/servoConfig';
 import type { ServoName } from '../api/skellyClient';
-import { TTS_API_KEY_STORAGE_KEY } from '../api/tts';
+import { SKULL_SPEAKER_STORAGE_KEY, TTS_API_KEY_STORAGE_KEY } from '../api/tts';
+import { AudioTest } from '../components/AudioTest';
 
 function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: string; min: number; max: number }) {
   const { client, status } = useSkelly();
@@ -126,6 +127,39 @@ function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: strin
   );
 }
 
+// Whether the Speech tab plays through the skull's amp (default) or the phone's
+// speaker. Stored in AsyncStorage; the Speech tab reads it when it opens.
+function SkullSpeakerToggle() {
+  const { colors } = useTheme();
+  const [useSkull, setUseSkull] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem(SKULL_SPEAKER_STORAGE_KEY)
+      .then((saved) => {
+        if (saved != null) setUseSkull(saved === '1');
+      })
+      .catch(() => {});
+  }, []);
+
+  const change = (v: boolean) => {
+    setUseSkull(v);
+    AsyncStorage.setItem(SKULL_SPEAKER_STORAGE_KEY, v ? '1' : '0').catch(() => {});
+  };
+
+  return (
+    <View style={[styles.appearanceRow, { backgroundColor: colors.surface }]}>
+      <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={[styles.label, { color: colors.textPrimary }]}>Play through skull speaker</Text>
+        <Text style={[styles.hint, { color: colors.textMuted, marginBottom: 0, marginTop: 4 }]}>
+          Generates speech with ElevenLabs, uploads it to the skull and plays it on its amp, with the jaw following the
+          real audio. Off plays on this phone instead.
+        </Text>
+      </View>
+      <Switch value={useSkull} onValueChange={change} trackColor={{ true: colors.accent }} />
+    </View>
+  );
+}
+
 function ApiKeyCard() {
   const { colors } = useTheme();
   const [key, setKey] = useState('');
@@ -198,6 +232,9 @@ export function ServoConfigScreen() {
         <Switch value={mode === 'dark'} onValueChange={toggleTheme} trackColor={{ true: colors.accent }} />
       </View>
 
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Speech output</Text>
+      <SkullSpeakerToggle />
+
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ElevenLabs API key</Text>
       <Text style={[styles.hint, { color: colors.textMuted }]}>
         Used by the Speech tab to generate speech for the skull's speaker.
@@ -205,7 +242,10 @@ export function ServoConfigScreen() {
       </Text>
       <ApiKeyCard />
 
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Servo zero calibration</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Audio test</Text>
+      <AudioTest />
+
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 24 }]}>Servo zero calibration</Text>
       <Text style={[styles.hint, { color: colors.textMuted }]}>
         Jog a servo to where it should sit at rest, then "Set current as
         zero". This is persisted on the skull itself (flash/NVS via

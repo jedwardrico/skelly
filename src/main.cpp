@@ -45,6 +45,14 @@ void setup() {
     return audio.play(path);
   });
   controlApi.onStopCommand([]() { audio.stop(); });
+  controlApi.onDeleteFile([](const String &path) {
+    switch (audio.deleteClip(path)) {
+      case AudioPlayer::DeleteResult::Deleted: return ControlAPI::DeleteResult::Deleted;
+      case AudioPlayer::DeleteResult::NotFound: return ControlAPI::DeleteResult::NotFound;
+      case AudioPlayer::DeleteResult::Playing: return ControlAPI::DeleteResult::Busy;
+      default: return ControlAPI::DeleteResult::Failed;
+    }
+  });
   controlApi.onServoCommand([](const String &name, float angle) {
     return servos.setAngle(name.c_str(), angle);
   });

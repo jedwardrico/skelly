@@ -222,6 +222,12 @@ export class SkellyClient {
     return body.files ?? [];
   }
 
+  // Removes a stored clip. Rejects if it is currently playing (HTTP 409).
+  async deleteFile(file: string): Promise<void> {
+    const name = file.replace(/^\/?audio\//, '');
+    await this.request(`/api/files?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+  }
+
   // Pushes a recorded clip to the skull's LittleFS over WiFi (see
   // POST /api/upload in docs/API.md) instead of `pio run --target uploadfs`
   // over USB. `name` must end in .mp3/.wav; the firmware sanitizes it and
