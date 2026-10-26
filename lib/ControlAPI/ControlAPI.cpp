@@ -106,6 +106,35 @@ void ControlAPI::setupRoutes() {
     request->send(200, "application/json", body);
   });
 
+  // DELETE /api/files?name=hello.mp3 - removes one stored clip. The name goes
+  // through the same sanitizer as uploads so it can't escape AUDIO_DIR.
+  server.on("/api/files", HTTP_DELETE, [this](AsyncWebServerRequest *request) {
+    String name = request->hasParam("name") ? sanitizeAudioFilename(request->getParam("name")->value()) : String();
+    if (name.isEmpty()) {
+      request->send(400, "application/json", "{\"ok\":false,\"error\":\"missing or invalid name\"}");
+      return;
+    }
+    if (!deleteHandler) {
+      request->send(500, "application/json", "{\"ok\":false,\"error\":\"delete not supported\"}");
+      return;
+    }
+    switch (deleteHandler(String(AUDIO_DIR) + "/" + name)) {
+      case DeleteResult::Deleted:
+        SkellyLog.printf("[ControlAPI] deleted %s/%s\n", AUDIO_DIR, name.c_str());
+        request->send(200, "application/json", "{\"ok\":true}");
+        break;
+      case DeleteResult::NotFound:
+        request->send(404, "application/json", "{\"ok\":false,\"error\":\"no such clip\"}");
+        break;
+      case DeleteResult::Busy:
+        request->send(409, "application/json", "{\"ok\":false,\"error\":\"clip is playing; stop it first\"}");
+        break;
+      default:
+        request->send(500, "application/json", "{\"ok\":false,\"error\":\"delete failed\"}");
+        break;
+    }
+  });
+
   server.on("/api/stop", HTTP_POST, [this](AsyncWebServerRequest *request) {
     if (stopHandler) stopHandler();
     request->send(200, "application/json", "{\"ok\":true}");

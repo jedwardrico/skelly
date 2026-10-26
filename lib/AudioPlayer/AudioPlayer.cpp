@@ -166,6 +166,23 @@ void AudioPlayer::stop() {
   runOnAudioTask(CMD_STOP, String());
 }
 
+AudioPlayer::DeleteResult AudioPlayer::deleteClip(const String &path) {
+  if (!lock) return DeleteResult::Failed;
+  xSemaphoreTake(lock, portMAX_DELAY);
+  DeleteResult result;
+  // Compared under the lock so the clip can't start playing between the check
+  // and the remove.
+  if (generator && currentPath == path) {
+    result = DeleteResult::Playing;
+  } else if (!LittleFS.exists(path)) {
+    result = DeleteResult::NotFound;
+  } else {
+    result = LittleFS.remove(path) ? DeleteResult::Deleted : DeleteResult::Failed;
+  }
+  xSemaphoreGive(lock);
+  return result;
+}
+
 String AudioPlayer::currentFile() const {
   if (!lock) return String();
   xSemaphoreTake(lock, portMAX_DELAY);

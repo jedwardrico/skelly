@@ -20,6 +20,8 @@ public:
   using ServoZeroResetHandler = std::function<bool(const String &name)>;
   using PlayCommandHandler = std::function<bool(const String &file)>;
   using StopCommandHandler = std::function<void()>;
+  enum class DeleteResult { Deleted, NotFound, Busy, Failed };
+  using DeleteFileHandler = std::function<DeleteResult(const String &path)>;
   using StatusProvider = std::function<void(JsonObject &out)>;
 
   // Connects WiFi (falling back to a SoftAP if STA fails) and starts the
@@ -37,6 +39,8 @@ public:
   void onServoZeroReset(ServoZeroResetHandler handler) { servoZeroResetHandler = handler; }
   void onPlayCommand(PlayCommandHandler handler) { playHandler = handler; }
   void onStopCommand(StopCommandHandler handler) { stopHandler = handler; }
+  // Removes a stored clip given its full LittleFS path (always under AUDIO_DIR).
+  void onDeleteFile(DeleteFileHandler handler) { deleteHandler = handler; }
   // Lets main.cpp fill in the "status" JSON object (playing state, jaw
   // level, servo angles, ...) without ControlAPI needing to know about every
   // other module.
@@ -53,6 +57,7 @@ private:
   ServoZeroResetHandler servoZeroResetHandler;
   PlayCommandHandler playHandler;
   StopCommandHandler stopHandler;
+  DeleteFileHandler deleteHandler;
   StatusProvider statusProvider;
 
   // State for the in-flight /api/upload request. ESPAsyncWebServer calls the

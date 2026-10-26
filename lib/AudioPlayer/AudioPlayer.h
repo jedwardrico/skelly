@@ -30,6 +30,10 @@ public:
   bool play(const String &path);
   void stop();
 
+  enum class DeleteResult { Deleted, NotFound, Playing, Failed };
+  // Removes a clip (full LittleFS path) unless it is the one currently playing.
+  DeleteResult deleteClip(const String &path);
+
   bool isPlaying() const { return playing; }
   String currentFile() const;
 

@@ -39,6 +39,17 @@ Lists what's available to play from `data/audio/` (uploaded via
 { "files": ["/audio/hello.mp3", "/audio/laugh.mp3"] }
 ```
 
+### `DELETE /api/files?name=hello.mp3`
+
+Removes one stored clip from `AUDIO_DIR`. `name` is sanitized like an upload
+filename (directories stripped, `.mp3`/`.wav` only). Responses:
+`{"ok":true}`; `404` `{"ok":false,"error":"no such clip"}`; `409` if that clip
+is currently playing (stop it first); `400` for a missing/invalid name.
+
+```bash
+curl -X DELETE "http://<skelly-ip>/api/files?name=hello.mp3"
+```
+
 ### `POST /api/play`
 
 ```json

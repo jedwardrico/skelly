@@ -38,6 +38,25 @@ export function ClipLibrary() {
     }
   };
 
+  const confirmDelete = (file: string) => {
+    const label = file.replace(/^\/?audio\//, '');
+    Alert.alert('Delete clip?', `${label} will be removed from the skull.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await client.deleteFile(file);
+            await loadFiles();
+          } catch (err) {
+            Alert.alert('Delete failed', err instanceof Error ? err.message : String(err));
+          }
+        },
+      },
+    ]);
+  };
+
   const uploadClip = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/*'],
@@ -99,19 +118,22 @@ export function ClipLibrary() {
         files.map((item) => {
           const isActive = status.playing && status.file === item;
           return (
-            <Pressable
+            <View
               key={item}
               style={[styles.fileRow, { backgroundColor: colors.surface }, isActive && { backgroundColor: colors.surfaceAlt }]}
-              onPress={() => play(item)}
-              disabled={busyFile === item}
             >
-              <Text
-                style={[styles.fileName, { color: colors.textPrimary }, isActive && { color: colors.accent, fontWeight: '700' }]}
-              >
-                {item.replace(/^\/?audio\//, '')}
-              </Text>
-              <Text style={[styles.filePlay, { color: colors.textSecondary }]}>{isActive ? '▶ playing' : '▶ play'}</Text>
-            </Pressable>
+              <Pressable style={styles.fileMain} onPress={() => play(item)} disabled={busyFile === item}>
+                <Text
+                  style={[styles.fileName, { color: colors.textPrimary }, isActive && { color: colors.accent, fontWeight: '700' }]}
+                >
+                  {item.replace(/^\/?audio\//, '')}
+                </Text>
+                <Text style={[styles.filePlay, { color: colors.textSecondary }]}>{isActive ? '▶ playing' : '▶ play'}</Text>
+              </Pressable>
+              <Pressable style={styles.deleteButton} onPress={() => confirmDelete(item)} hitSlop={8}>
+                <Text style={[styles.deleteText, { color: colors.danger }]}>Delete</Text>
+              </Pressable>
+            </View>
           );
         })
       )}
@@ -128,13 +150,21 @@ const styles = StyleSheet.create({
   empty: { fontSize: 13, paddingVertical: 8 },
   fileRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
     borderRadius: 10,
     marginBottom: 8,
   },
+  fileMain: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingLeft: 14,
+    paddingRight: 8,
+  },
+  deleteButton: { paddingVertical: 12, paddingHorizontal: 14 },
+  deleteText: { fontSize: 13, fontWeight: '700' },
   fileName: { fontSize: 15, fontWeight: '500' },
   filePlay: { fontSize: 13 },
 });
