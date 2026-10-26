@@ -61,6 +61,8 @@ private:
   File uploadFile;
   String uploadPath;
   bool uploadFailed = false;
+  uint32_t uploadCrc = 0;   // running CRC32 of the bytes written, echoed back so
+  size_t uploadBytes = 0;   // the client can tell a corrupted transfer from a good one
 
   void connectWifi();
   void setupRoutes();

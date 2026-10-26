@@ -233,6 +233,15 @@ export class SkellyClient {
   // Same endpoint as uploadFile, for audio already in memory (e.g. freshly
   // synthesized TTS) rather than a picked file on disk.
   async uploadBlob(blob: Blob, name: string): Promise<string> {
+    return (await this.uploadBlobInfo(blob, name)).file;
+  }
+
+  // As uploadBlob, but also returns the size and CRC-32 the firmware computed
+  // over the bytes it received, so callers can verify the transfer.
+  async uploadBlobInfo(
+    blob: Blob,
+    name: string,
+  ): Promise<{ file: string; size?: number; crc32?: number }> {
     const form = new FormData();
     form.append('file', blob, name);
 
@@ -244,7 +253,7 @@ export class SkellyClient {
     if (!res.ok || !body.ok) {
       throw new Error(body?.error ?? `HTTP ${res.status}`);
     }
-    return body.file as string;
+    return { file: body.file as string, size: body.size, crc32: body.crc32 };
   }
 
   // Prefers the WebSocket (instant, no extra round trip) and falls back to
