@@ -40,7 +40,10 @@ uint16_t ServoController::angleToPulseUs(int index, float angleDeg) const {
 }
 
 void ServoController::writeIndex(int index, float angleDeg) {
-  servoDrivers[index].writeMicroseconds(angleToPulseUs(index, angleDeg));
+  uint16_t pulse = angleToPulseUs(index, angleDeg);
+  if (pulse == lastPulseUs[index]) return;
+  lastPulseUs[index] = pulse;
+  servoDrivers[index].writeMicroseconds(pulse);
 }
 
 bool ServoController::setAngle(const char *name, float angleDeg) {

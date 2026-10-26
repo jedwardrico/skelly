@@ -53,6 +53,9 @@ private:
   float speedDegPerSec[SERVO_CHANNEL_COUNT] = {0};
   float restOverride[SERVO_CHANNEL_COUNT] = {0};
   uint32_t lastUpdateMs = 0;
+  // Last pulse width actually sent to each servo. Each ESP32Servo write was
+  // measured blocking the core for ~40ms, so skip writes that wouldn't change it.
+  uint16_t lastPulseUs[SERVO_CHANNEL_COUNT] = {0};
 
   uint16_t angleToPulseUs(int index, float angleDeg) const;
   float clampToRange(int index, float angleDeg) const;
