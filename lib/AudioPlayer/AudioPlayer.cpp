@@ -15,6 +15,61 @@ static void decoderStatus(void *, int code, const char *msg) {
   SkellyLog.printf("[AudioPlayer] decoder: %d %s\n", code, msg);
 }
 
+// Per-task CPU accounting, so the log can name whatever is hogging the CPU
+// while audio plays. Only compiled in when FreeRTOS run-time stats are enabled.
+#if (configGENERATE_RUN_TIME_STATS == 1) && (configUSE_TRACE_FACILITY == 1)
+#define SKELLY_TASK_STATS 1
+static const UBaseType_t kStatsMaxTasks = 40;
+static TaskStatus_t s_statsBefore[kStatsMaxTasks];
+static TaskStatus_t s_statsAfter[kStatsMaxTasks];
+static UBaseType_t s_statsBeforeN = 0;
+static uint32_t s_statsBeforeTotal = 0;
+
+static void statsSnapshotStart() {
+  s_statsBeforeN = uxTaskGetSystemState(s_statsBefore, kStatsMaxTasks, &s_statsBeforeTotal);
+}
+
+static void statsLogBusiest() {
+  uint32_t total = 0;
+  UBaseType_t n = uxTaskGetSystemState(s_statsAfter, kStatsMaxTasks, &total);
+  uint32_t span = total - s_statsBeforeTotal;
+  if (n == 0 || s_statsBeforeN == 0 || span == 0) {
+    SkellyLog.println("[AudioPlayer] cpu: task stats unavailable (too many tasks?)");
+    return;
+  }
+  uint32_t delta[kStatsMaxTasks];
+  for (UBaseType_t i = 0; i < n; i++) {
+    uint32_t prev = 0;
+    for (UBaseType_t j = 0; j < s_statsBeforeN; j++) {
+      if (s_statsBefore[j].xHandle == s_statsAfter[i].xHandle) {
+        prev = (uint32_t)s_statsBefore[j].ulRunTimeCounter;
+        break;
+      }
+    }
+    delta[i] = (uint32_t)s_statsAfter[i].ulRunTimeCounter - prev;
+  }
+  // Six busiest tasks, as % of the elapsed run-time counter (idle tasks included).
+  String line = "[AudioPlayer] cpu:";
+  for (int k = 0; k < 6; k++) {
+    int best = -1;
+    for (UBaseType_t i = 0; i < n; i++) {
+      if (delta[i] && (best < 0 || delta[i] > delta[best])) best = (int)i;
+    }
+    if (best < 0) break;
+    line += String(" ") + s_statsAfter[best].pcTaskName + "(p" +
+            String((unsigned)s_statsAfter[best].uxCurrentPriority) + ")=" +
+            String((unsigned)((uint64_t)delta[best] * 100 / span)) + "%";
+    delta[best] = 0;
+  }
+  SkellyLog.println(line.c_str());
+}
+#else
+static void statsSnapshotStart() {}
+static void statsLogBusiest() {
+  SkellyLog.println("[AudioPlayer] cpu: per-task stats not enabled in this FreeRTOS build");
+}
+#endif
+
 bool AudioPlayer::begin() {
   if (!LittleFS.begin(true)) {
     SkellyLog.println("[AudioPlayer] LittleFS mount failed");
@@ -92,6 +147,7 @@ void AudioPlayer::cleanup() {
                      (unsigned)configTICK_RATE_HZ, (unsigned)uxTaskPriorityGet(nullptr),
                      (unsigned)sleepCount, (unsigned)(sleepCount ? sleepUsTotal / sleepCount : 0),
                      (unsigned)sleepUsMax);
+    statsLogBusiest();
   }
   if (generator) {
     generator->stop();
@@ -142,6 +198,7 @@ bool AudioPlayer::startLocked(const String &path) {
   generator->RegisterStatusCB(decoderStatus, nullptr);
   s_out->samplesConsumed = 0;
   s_out->rate = 0;
+  statsSnapshotStart();
   playStartMs = lastLoopMs = millis();
   maxLoopGapMs = 0;
   loopCalls = 0;
