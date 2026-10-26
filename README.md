@@ -65,7 +65,7 @@ extension).
 5. Watch the serial monitor for the IP address it connects with, then try:
    ```
    curl http://<ip>/api/status
-   curl -X POST http://<ip>/api/play -d '{"file":"hello.mp3"}'
+   curl -X POST http://<ip>/api/play -H 'Content-Type: application/json' -d '{"file":"hello.mp3"}'
    ```
 
 ## Roadmap

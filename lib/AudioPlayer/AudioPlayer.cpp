@@ -3,6 +3,7 @@
 #include "SkellyLog.h"
 #include <AudioGeneratorMP3.h>
 #include <AudioGeneratorWAV.h>
+#include <AudioFileSourceBuffer.h>
 #include <AudioFileSourceLittleFS.h>
 #include <LittleFS.h>
 
@@ -23,6 +24,7 @@ bool AudioPlayer::begin() {
   }
 
   s_out = new JawSyncOutput();
+  s_out->SetBuffers(AUDIO_I2S_DMA_BUFFERS, AUDIO_I2S_DMA_BUFFER_BYTES);
   s_out->SetPinout(I2S_BCLK_PIN, I2S_LRC_PIN, I2S_DOUT_PIN);
   s_out->SetOutputModeMono(true);
   s_out->SetGain(AUDIO_DEFAULT_GAIN);
@@ -48,6 +50,10 @@ void AudioPlayer::cleanup() {
     generator->stop();
     delete generator;
     generator = nullptr;
+  }
+  if (buffered) {
+    delete buffered;
+    buffered = nullptr;
   }
   if (file) {
     delete file;
@@ -79,7 +85,12 @@ bool AudioPlayer::play(const String &path) {
     return false;
   }
 
-  if (!generator->begin(file, s_out)) {
+  // Unbuffered, the MP3 decoder issues many tiny LittleFS reads between
+  // frames; a slow one starves the I2S DMA queue and the speech garbles.
+  // Read ahead so the decoder always finds its next frame in RAM.
+  buffered = new AudioFileSourceBuffer(file, AUDIO_FILE_BUFFER_BYTES);
+
+  if (!generator->begin(buffered, s_out)) {
     SkellyLog.printf("[AudioPlayer] failed to start: %s\n", path.c_str());
     cleanup();
     return false;
