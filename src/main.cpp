@@ -21,6 +21,7 @@ static void buildStatus(JsonObject &out) {
   out["playing"] = audio.isPlaying();
   out["file"] = audio.currentFile();
   out["jawLevel"] = audio.jawLevel();
+  out["volume"] = audio.gain();
   JsonObject servoAngles = out["servos"].to<JsonObject>();
   JsonObject servoZeros = out["servoZero"].to<JsonObject>();
   for (size_t i = 0; i < SERVO_CHANNEL_COUNT; i++) {
@@ -45,6 +46,10 @@ void setup() {
     return audio.play(path);
   });
   controlApi.onStopCommand([]() { audio.stop(); });
+  controlApi.onVolumeCommand([](float volume) {
+    audio.setGain(volume);
+    return true;
+  });
   controlApi.onDeleteFile([](const String &path) {
     switch (audio.deleteClip(path)) {
       case AudioPlayer::DeleteResult::Deleted: return ControlAPI::DeleteResult::Deleted;

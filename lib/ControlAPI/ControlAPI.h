@@ -20,6 +20,7 @@ public:
   using ServoZeroResetHandler = std::function<bool(const String &name)>;
   using PlayCommandHandler = std::function<bool(const String &file)>;
   using StopCommandHandler = std::function<void()>;
+  using VolumeHandler = std::function<bool(float volume)>;
   enum class DeleteResult { Deleted, NotFound, Busy, Failed };
   using DeleteFileHandler = std::function<DeleteResult(const String &path)>;
   using StatusProvider = std::function<void(JsonObject &out)>;
@@ -39,6 +40,8 @@ public:
   void onServoZeroReset(ServoZeroResetHandler handler) { servoZeroResetHandler = handler; }
   void onPlayCommand(PlayCommandHandler handler) { playHandler = handler; }
   void onStopCommand(StopCommandHandler handler) { stopHandler = handler; }
+  // Sets output volume, 0.0-1.0.
+  void onVolumeCommand(VolumeHandler handler) { volumeHandler = handler; }
   // Removes a stored clip given its full LittleFS path (always under AUDIO_DIR).
   void onDeleteFile(DeleteFileHandler handler) { deleteHandler = handler; }
   // Lets main.cpp fill in the "status" JSON object (playing state, jaw
@@ -57,6 +60,7 @@ private:
   ServoZeroResetHandler servoZeroResetHandler;
   PlayCommandHandler playHandler;
   StopCommandHandler stopHandler;
+  VolumeHandler volumeHandler;
   DeleteFileHandler deleteHandler;
   StatusProvider statusProvider;
 

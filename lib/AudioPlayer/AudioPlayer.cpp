@@ -5,8 +5,12 @@
 #include <AudioGeneratorWAV.h>
 #include <AudioFileSourceLittleFS.h>
 #include <LittleFS.h>
+#include <Preferences.h>
 
 volatile float g_jawEnvelope = 0.0f;
+
+static const char *GAIN_PREFS_NAMESPACE = "audio";
+static const char *GAIN_PREFS_KEY = "gain";
 
 static JawSyncOutput *s_out = nullptr;
 
@@ -31,7 +35,13 @@ bool AudioPlayer::begin() {
   s_out->SetBuffers(AUDIO_I2S_DMA_BUFFERS, AUDIO_I2S_DMA_BUFFER_BYTES);
   s_out->SetPinout(I2S_BCLK_PIN, I2S_LRC_PIN, I2S_DOUT_PIN);
   s_out->SetOutputModeMono(true);
-  s_out->SetGain(AUDIO_DEFAULT_GAIN);
+  {
+    Preferences prefs;
+    prefs.begin(GAIN_PREFS_NAMESPACE, /*readOnly=*/true);
+    currentGain = constrain(prefs.getFloat(GAIN_PREFS_KEY, AUDIO_DEFAULT_GAIN), 0.0f, 1.0f);
+    prefs.end();
+  }
+  s_out->SetGain(currentGain);
 
 #if I2S_AMP_ENABLE_PIN >= 0
   pinMode(I2S_AMP_ENABLE_PIN, OUTPUT);
@@ -63,7 +73,12 @@ void AudioPlayer::taskEntry(void *arg) {
 }
 
 void AudioPlayer::setGain(float gain) {
-  if (s_out) s_out->SetGain(gain);
+  currentGain = constrain(gain, 0.0f, 1.0f);
+  if (s_out) s_out->SetGain(currentGain);
+  Preferences prefs;
+  prefs.begin(GAIN_PREFS_NAMESPACE, /*readOnly=*/false);
+  prefs.putFloat(GAIN_PREFS_KEY, currentGain);
+  prefs.end();
 }
 
 float AudioPlayer::jawLevel() const {

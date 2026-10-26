@@ -40,7 +40,9 @@ public:
   // Current smoothed audio envelope, 0.0 (silence) - 1.0 (full scale).
   float jawLevel() const;
 
+  // Output volume, 0.0-1.0 (software gain). Persisted across reboots.
   void setGain(float gain);
+  float gain() const { return currentGain; }
 
 private:
   AudioFileSource *file = nullptr;
@@ -48,6 +50,7 @@ private:
   String currentPath;
   SemaphoreHandle_t lock = nullptr; // guards file/generator/currentPath between the audio task and callers
   volatile bool playing = false;
+  float currentGain = AUDIO_DEFAULT_GAIN;
 
   // play()/stop() are executed by the audio task, not the caller. The I2S
   // driver attaches its interrupt to the core that creates the channel; callers

@@ -150,6 +150,16 @@ void ControlAPI::setupRoutes() {
       });
   server.addHandler(playHandler_);
 
+  AsyncCallbackJsonWebHandler *volumeHandler_ = new AsyncCallbackJsonWebHandler(
+      "/api/volume", [this](AsyncWebServerRequest *request, JsonVariant &json) {
+        JsonObject obj = json.as<JsonObject>();
+        float volume = obj["volume"] | NAN;
+        bool ok = !isnan(volume) && volumeHandler && volumeHandler(volume);
+        request->send(ok ? 200 : 400, "application/json",
+                      ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"volume command failed\"}");
+      });
+  server.addHandler(volumeHandler_);
+
   AsyncCallbackJsonWebHandler *servoHandler_ = new AsyncCallbackJsonWebHandler(
       "/api/servo", [this](AsyncWebServerRequest *request, JsonVariant &json) {
         JsonObject obj = json.as<JsonObject>();
@@ -290,6 +300,12 @@ void ControlAPI::handleCommand(const JsonObject &cmd, JsonDocument &replyDoc) {
     reply["type"] = "ack";
     reply["cmd"] = "stop";
     reply["ok"] = true;
+  } else if (type == "volume") {
+    float volume = cmd["volume"] | NAN;
+    bool ok = !isnan(volume) && volumeHandler && volumeHandler(volume);
+    reply["type"] = "ack";
+    reply["cmd"] = "volume";
+    reply["ok"] = ok;
   } else if (type == "servo") {
     String name = cmd["name"] | "";
     float angle = cmd["angle"] | NAN;

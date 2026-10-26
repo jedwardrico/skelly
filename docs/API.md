@@ -17,6 +17,7 @@ WiFi - see `include/Secrets.h.example`).
   "playing": true,
   "file": "/audio/hello.mp3",
   "jawLevel": 0.42,
+  "volume": 0.6,
   "servos": {
     "jaw": 23.1,
     "eye_pan": 90,
@@ -63,6 +64,15 @@ default) or a full LittleFS path. Response: `{"ok":true}` or
 ### `POST /api/stop`
 
 No body. Stops playback immediately (jaw returns to idle on the next loop).
+
+### `POST /api/volume`
+
+```json
+{ "volume": 0.6 }
+```
+
+Output volume, 0.0-1.0 (clamped). Applied immediately, including mid-playback,
+and persisted across reboots. Current value is `volume` in the status payload.
 
 ### `POST /api/servo`
 
@@ -134,6 +144,7 @@ animate a "talking" indicator or mouth graphic without polling:
 // client -> server
 { "cmd": "play", "file": "hello.mp3" }
 { "cmd": "stop" }
+{ "cmd": "volume", "volume": 0.6 }
 { "cmd": "servo", "name": "jaw", "angle": 30 }
 { "cmd": "setZero", "name": "jaw", "angle": 4 }
 { "cmd": "resetZero", "name": "jaw" }
@@ -148,6 +159,7 @@ animate a "talking" indicator or mouth graphic without polling:
   "playing": true,
   "file": "/audio/hello.mp3",
   "jawLevel": 0.42,
+  "volume": 0.6,
   "servos": { "jaw": 23.1, "eye_pan": 90, ... },
   "servoZero": { "jaw": 4, "eye_pan": 90, ... }
 }
