@@ -3,6 +3,9 @@
 
   test_tone.wav  16 kHz mono PCM - no decoder involved, so it isolates the
                  wiring/I2S path.
+  test_tone_44k.wav  same clip as 44.1 kHz PCM WAV - the MP3's output rate with
+                 no decoder, to tell "MP3 decode too slow" from "44.1 kHz
+                 I2S output broken" (needs ffmpeg).
   test_tone.mp3  44.1 kHz mono 64 kbps - same format ElevenLabs returns, so it
                  exercises the MP3 decoder too (needs ffmpeg).
 
@@ -49,6 +52,11 @@ def main():
         w.writeframes(b"".join(struct.pack("<h", x) for x in build()))
     print("wrote", wav_path)
     try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error", "-i", wav_path, "-ar", "44100",
+             "-ac", "1", "-c:a", "pcm_s16le", os.path.join(OUT, "test_tone_44k.wav")],
+            check=True)
+        print("wrote test_tone_44k.wav")
         subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error", "-i", wav_path, "-ar", "44100",
              "-ac", "1", "-b:a", "64k", os.path.join(OUT, "test_tone.mp3")],

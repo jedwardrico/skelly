@@ -34,6 +34,9 @@ private:
   AudioFileSource *buffered = nullptr; // read-ahead wrapper around file; what the decoder reads
   AudioGenerator *generator = nullptr;
   String currentPath;
+  uint32_t playStartMs = 0;
+  uint32_t lastLoopMs = 0;
+  uint32_t maxLoopGapMs = 0;
 
   void cleanup();
 };

@@ -11,4 +11,13 @@
 class JawSyncOutput : public AudioOutputI2S {
 public:
   bool ConsumeSample(int16_t sample[2]) override;
+  bool SetRate(int hz) override {
+    rate = hz;
+    return AudioOutputI2S::SetRate(hz);
+  }
+
+  // Playback stats for diagnosing underruns: samples actually handed to I2S
+  // and the sample rate the decoder asked for.
+  uint32_t samplesConsumed = 0;
+  int rate = 0;
 };
