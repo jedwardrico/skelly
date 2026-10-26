@@ -18,7 +18,8 @@ export function ClipLibrary() {
 
   const loadFiles = useCallback(async () => {
     try {
-      setFiles(await client.getFiles());
+      // Hide non-audio entries such as the .gitkeep that keeps data/audio/ in git.
+      setFiles((await client.getFiles()).filter((f) => ALLOWED_EXTENSIONS.test(f)));
     } catch {
       // leave the previous list in place; the empty state below covers a
       // never-loaded list
