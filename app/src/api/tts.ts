@@ -17,8 +17,8 @@ export interface TtsVoice {
   name: string;
 }
 
-// Voice the picker starts on. It's a library voice rather than a premade one, so
-// listVoices() would filter it out; the app adds it back explicitly.
+// Voice the picker starts on. It's a library voice, so it may not appear in
+// listVoices(); the app adds it explicitly.
 export const DEFAULT_VOICE: TtsVoice = { id: 'PRfCKe8kdrG3nuXOAnoH', name: 'Gork' };
 
 async function errorMessage(res: Response, fallback: string): Promise<string> {
@@ -27,14 +27,12 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
   return (typeof detail === 'string' ? detail : detail?.message) ?? `${fallback} (HTTP ${res.status})`;
 }
 
-// Free-tier voices only: the premade ones. Library, cloned and generated voices
-// (which need a paid plan to use via the API) are filtered out.
+// Every voice on the account; the picker's search handles long lists.
 export async function listVoices(apiKey: string): Promise<TtsVoice[]> {
   const res = await fetch(`${API_BASE}/voices`, { headers: { 'xi-api-key': apiKey } });
   if (!res.ok) throw new Error(await errorMessage(res, 'Could not load voices'));
   const body = await res.json();
   return (body.voices ?? [])
-    .filter((v: { category?: string }) => v.category === 'premade')
     .map((v: { voice_id: string; name: string }) => ({
       id: v.voice_id,
       name: v.name,
