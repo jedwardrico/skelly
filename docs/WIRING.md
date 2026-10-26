@@ -77,6 +77,19 @@ silkscreens — check your specific breakout's datasheet. Tying `SD` to a GPIO
 hissing; tie it straight to 3.3V instead and set `I2S_AMP_ENABLE_PIN` to `-1`
 in `Config.h` if you'd rather not use a GPIO for it.
 
+### Debugging garbled audio
+
+Run `python3 tools/make_test_audio.py` (writes `data/audio/test_tone.wav` and
+`test_tone.mp3`; no ElevenLabs credits needed), then work down this list:
+
+1. `pio run --target uploadfs`, play `test_tone.wav` (no network, no decoder):
+   garbled/noisy here = wiring or power (loose BCLK/LRC/DIN jumper, no common
+   ground, amp sharing a noisy rail with the servos).
+2. Play `test_tone.mp3` from flash: clean WAV but garbled MP3 = decode
+   underruns or sample-rate trouble, not wiring or transfer.
+3. In the app's Speech tab, "Send test tone to skull" uploads a generated WAV
+   over WiFi and compares CRCs: a mismatch = corrupted transfer.
+
 Speaker: any small 4-8 ohm speaker rated for the MAX98357A's few watts fits
 inside most 3D-printed skull cavities.
 

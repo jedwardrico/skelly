@@ -82,7 +82,9 @@ or `.wav`; it's written straight into `AUDIO_DIR` (`/audio`) on LittleFS,
 overwriting any existing file of the same name. Not chunked/resumable - if
 the connection drops mid-upload the partial file is left in place, so a
 failed upload should be retried with the same name. Response:
-`{"ok":true,"file":"/audio/hello.mp3"}` or `{"ok":false,"error":"..."}`.
+`{"ok":true,"file":"/audio/hello.mp3","size":12345,"crc32":123456789}` (size
+and standard CRC-32 of the bytes received, for verifying the transfer) or
+`{"ok":false,"error":"..."}`.
 
 ```bash
 curl -F "file=@hello.mp3" http://<skelly-ip>/api/upload

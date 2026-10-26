@@ -47,6 +47,17 @@ void ControlAPI::buildStatus(JsonObject &out) {
   if (statusProvider) statusProvider(out);
 }
 
+// Standard CRC-32 (IEEE, same as zlib/PKZIP), updated a chunk at a time. Bitwise
+// rather than table-driven: uploads are small and this keeps RAM use at zero.
+static uint32_t crc32Update(uint32_t crc, const uint8_t *data, size_t len) {
+  crc = ~crc;
+  while (len--) {
+    crc ^= *data++;
+    for (int k = 0; k < 8; k++) crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
+  }
+  return ~crc;
+}
+
 // Strips any directory components and rejects anything that isn't a plain
 // .mp3/.wav filename made of safe characters, so an upload can't escape
 // AUDIO_DIR or clobber an arbitrary LittleFS path.
@@ -150,6 +161,8 @@ void ControlAPI::setupRoutes() {
           JsonDocument doc;
           doc["ok"] = true;
           doc["file"] = uploadPath;
+          doc["size"] = uploadBytes;
+          doc["crc32"] = uploadCrc;
           String body;
           serializeJson(doc, body);
           request->send(200, "application/json", body);
@@ -193,6 +206,8 @@ void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, s
   if (index == 0) {
     uploadFailed = false;
     uploadPath = "";
+    uploadCrc = 0;
+    uploadBytes = 0;
     String safeName = sanitizeAudioFilename(filename);
     if (safeName.isEmpty()) {
       SkellyLog.printf("[ControlAPI] upload rejected, bad filename \"%s\"\n", filename.c_str());
@@ -221,11 +236,13 @@ void ControlAPI::handleUpload(AsyncWebServerRequest *request, String filename, s
     uploadFile.close();
     return;
   }
+  uploadCrc = crc32Update(uploadCrc, data, len);
+  uploadBytes += len;
 
   if (final) {
     uploadFile.close();
-    SkellyLog.printf("[ControlAPI] upload complete -> %s (%u bytes)\n", uploadPath.c_str(),
-                   (unsigned)(index + len));
+    SkellyLog.printf("[ControlAPI] upload complete -> %s (%u bytes, crc32 %08x)\n",
+                     uploadPath.c_str(), (unsigned)uploadBytes, (unsigned)uploadCrc);
   }
 }
 

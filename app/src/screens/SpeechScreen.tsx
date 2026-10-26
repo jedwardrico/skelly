@@ -17,6 +17,7 @@ import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
+import { buildTestWav, bytesToBlob, crc32 } from '../api/testAudio';
 import { listVoices, synthesizeSpeech, TTS_API_KEY_STORAGE_KEY, TtsVoice } from '../api/tts';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
@@ -25,6 +26,7 @@ const SKULL_STORAGE_KEY = 'skelly:speech:skull';
 const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
 // Fixed name so repeated speech overwrites one clip instead of filling LittleFS.
 const SPEECH_CLIP = 'speech.mp3';
+const TEST_CLIP = 'app_test.wav';
 // Used when the key can't list voices (e.g. a restricted key without the
 // voices_read permission) so speech still works. "Rachel" is a premade voice.
 const FALLBACK_VOICES: TtsVoice[] = [{ id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' }];
@@ -47,6 +49,7 @@ export function SpeechScreen() {
   const [skullVoices, setSkullVoices] = useState<TtsVoice[]>([]);
   const [voicesError, setVoicesError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'synthesizing' | 'uploading' | null>(null);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.multiGet([SKULL_STORAGE_KEY, TTS_API_KEY_STORAGE_KEY, SKULL_VOICE_STORAGE_KEY])
@@ -136,6 +139,31 @@ export function SpeechScreen() {
       await client.play(SPEECH_CLIP);
     } catch (err) {
       Alert.alert('Speech failed', err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Uploads a generated WAV and plays it - no ElevenLabs involved. Compares the
+  // CRC-32 the firmware computed against ours to tell a corrupted transfer
+  // from a wiring/decode problem.
+  const sendTestTone = async () => {
+    try {
+      setBusy('uploading');
+      setTestResult(null);
+      const bytes = buildTestWav();
+      const expected = crc32(bytes);
+      await client.stop().catch(() => {});
+      const info = await client.uploadBlobInfo(await bytesToBlob(bytes, 'audio/wav'), TEST_CLIP);
+      const match = info.crc32 === expected && info.size === bytes.length;
+      setTestResult(
+        match
+          ? `Transfer OK (${bytes.length} bytes, CRC ${expected.toString(16)}). Garbling now = wiring/power.`
+          : `Transfer CORRUPTED: sent ${bytes.length} bytes / CRC ${expected.toString(16)}, skull got ${info.size} / ${info.crc32?.toString(16)}.`,
+      );
+      await client.play(TEST_CLIP);
+    } catch (err) {
+      Alert.alert('Test tone failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setBusy(null);
     }
@@ -335,6 +363,20 @@ export function SpeechScreen() {
       >
         <Text style={styles.speakButtonText}>{buttonLabel}</Text>
       </Pressable>
+
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Audio test</Text>
+      <Pressable
+        style={[styles.testButton, { borderColor: colors.accent }, !!busy && { opacity: 0.6 }]}
+        disabled={!!busy}
+        onPress={sendTestTone}
+      >
+        <Text style={[styles.testButtonText, { color: colors.accent }]}>Send test tone to skull</Text>
+      </Pressable>
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        Uploads and plays a generated WAV (no ElevenLabs credits) and checks the
+        bytes arrived intact.
+      </Text>
+      {testResult && <Text style={[styles.hint, { color: colors.textPrimary }]}>{testResult}</Text>}
     </ScrollView>
   );
 }
@@ -380,5 +422,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
+  testButton: { borderWidth: 2, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  testButtonText: { fontWeight: '700', fontSize: 15 },
   speakButtonText: { color: '#fff', fontWeight: '700', fontSize: 17 },
 });
