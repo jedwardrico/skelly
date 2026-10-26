@@ -67,23 +67,10 @@ void setup() {
   SkellyLog.println("[Skelly] ready");
 }
 
-// While audio plays, accumulates how long each part of loop() takes and logs it
-// every 2 s, to find what makes a pass slow (it ran ~40 ms/pass in testing).
-struct LoopTimes {
-  uint32_t passes = 0, servosUs = 0, apiUs = 0, jawUs = 0, eyesUs = 0, maxPassUs = 0;
-  uint32_t lastReportMs = 0;
-};
-static LoopTimes lt;
-
 void loop() {
-  uint32_t passStart = micros();
   audio.loop();
-  uint32_t t = micros();
   servos.update();
-  lt.servosUs += micros() - t;
-  t = micros();
   controlApi.loop();
-  lt.apiUs += micros() - t;
 #ifdef ENABLE_BLUEPAD32
   gamepad.update();
 #endif
@@ -96,7 +83,6 @@ void loop() {
   jawOverridden = g_jawOverride;
 #endif
   bool playing = audio.isPlaying();
-  t = micros();
   if (playing && !jawOverridden) {
     float level = audio.jawLevel();
     const ServoChannelDef *jaw = nullptr;
@@ -121,24 +107,6 @@ void loop() {
       }
     }
   }
-  lt.jawUs += micros() - t;
 
-  t = micros();
   eyes.update(playing);
-  lt.eyesUs += micros() - t;
-
-  uint32_t passUs = micros() - passStart;
-  if (passUs > lt.maxPassUs) lt.maxPassUs = passUs;
-  lt.passes++;
-  uint32_t now = millis();
-  if (now - lt.lastReportMs >= 2000) {
-    if (playing && lt.passes) {
-      SkellyLog.printf(
-          "[Skelly] loop: %u passes, avg us/pass: servos %u, api %u, jaw %u, eyes %u, max pass %u us\n",
-          (unsigned)lt.passes, (unsigned)(lt.servosUs / lt.passes), (unsigned)(lt.apiUs / lt.passes),
-          (unsigned)(lt.jawUs / lt.passes), (unsigned)(lt.eyesUs / lt.passes), (unsigned)lt.maxPassUs);
-    }
-    lt = LoopTimes();
-    lt.lastReportMs = now;
-  }
 }

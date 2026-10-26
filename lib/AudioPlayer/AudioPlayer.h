@@ -58,14 +58,6 @@ private:
   bool runOnAudioTask(Cmd c, const String &path);
   void runCommand();
   uint32_t playStartMs = 0;
-  uint32_t lastLoopMs = 0;
-  uint32_t maxLoopGapMs = 0;
-  uint32_t loopCalls = 0;
-  uint32_t generatorUs = 0; // time spent inside generator->loop()
-  // How long the task's 1-tick sleep really lasted (written by the audio task only).
-  uint32_t sleepCount = 0;
-  uint32_t sleepUsTotal = 0;
-  uint32_t sleepUsMax = 0;
 
   void cleanup(); // caller must hold lock
   bool startLocked(const String &path); // caller must hold lock
