@@ -94,9 +94,12 @@ bool AudioPlayer::begin() {
 #endif
 
   lock = xSemaphoreCreateMutex();
-  // Core 1 (same as loop()) at a priority above loop() and the web server's
-  // async_tcp task (3) so neither can delay a refill; the task sleeps a tick between steps so loop() still runs.
-  xTaskCreatePinnedToCore(taskEntry, "audio", 10240, this, AUDIO_TASK_PRIORITY, nullptr, 1);
+  // Core 0, not core 1 where loop() runs: measured, loop() runs flat out on core 1
+  // and blocks even a higher-priority task there for ~40ms at a time (servo
+  // PWM writes during jaw sync are the suspect), while core 0 is ~97% idle.
+  // WiFi (priority 23) still preempts it, which is fine - it sleeps a tick between
+  // steps and the I2S queue holds far more than a WiFi burst.
+  xTaskCreatePinnedToCore(taskEntry, "audio", 10240, this, AUDIO_TASK_PRIORITY, nullptr, 0);
 
   return true;
 }
