@@ -197,6 +197,23 @@ export function SpeechScreen() {
         <ConnectionBadge />
       </View>
 
+      <View style={[styles.nowPlaying, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.nowPlayingTitle, { color: colors.textSecondary }]}>Now playing</Text>
+        <Text style={[styles.nowPlayingFile, { color: colors.textPrimary }]}>
+          {status.playing ? status.file ?? 'unknown clip' : '— nothing —'}
+        </Text>
+        <View style={[styles.jawMeterTrack, { backgroundColor: colors.border }]}>
+          <View style={[styles.jawMeterFill, { width: `${Math.round(status.jawLevel * 100)}%`, backgroundColor: colors.accent }]} />
+        </View>
+        <Pressable
+          style={[styles.stopButton, { backgroundColor: colors.danger }, !status.playing && { backgroundColor: colors.disabled }]}
+          disabled={!status.playing}
+          onPress={() => client.stop()}
+        >
+          <Text style={styles.stopButtonText}>Stop</Text>
+        </Pressable>
+      </View>
+
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Text to speech</Text>
       <Text style={[styles.hint, { color: colors.textMuted, marginBottom: 8 }]}>
         Playing on {useSkull ? "the skull's speaker" : "this phone's speaker"} (change in the Setup tab).
@@ -328,6 +345,13 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   header: { alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', marginTop: 16, marginBottom: 8 },
+  nowPlaying: { borderRadius: 14, padding: 16 },
+  nowPlayingTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', marginBottom: 8 },
+  nowPlayingFile: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  jawMeterTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  jawMeterFill: { height: '100%' },
+  stopButton: { marginTop: 14, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  stopButtonText: { color: '#fff', fontWeight: '700' },
   textInput: {
     minHeight: 90,
     borderWidth: 1,
