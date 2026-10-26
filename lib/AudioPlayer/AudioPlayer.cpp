@@ -38,7 +38,20 @@ bool AudioPlayer::begin() {
   digitalWrite(I2S_AMP_ENABLE_PIN, HIGH); // enable MAX98357A output
 #endif
 
+  lock = xSemaphoreCreateMutex();
+  // Core 1 (same as loop()) at a priority above it so a slow loop() pass can't
+  // delay a refill; the task sleeps a tick between steps so loop() still runs.
+  xTaskCreatePinnedToCore(taskEntry, "audio", 10240, this, 2, nullptr, 1);
+
   return true;
+}
+
+void AudioPlayer::taskEntry(void *arg) {
+  AudioPlayer *self = static_cast<AudioPlayer *>(arg);
+  for (;;) {
+    self->pump();
+    vTaskDelay(self->playing ? 1 : 20 / portTICK_PERIOD_MS);
+  }
 }
 
 void AudioPlayer::setGain(float gain) {
@@ -77,16 +90,27 @@ void AudioPlayer::cleanup() {
     file = nullptr;
   }
   currentPath = "";
+  playing = false;
   g_jawEnvelope = 0.0f;
 }
 
 bool AudioPlayer::play(const String &path) {
-  stop();
+  if (!lock) return false;
+  xSemaphoreTake(lock, portMAX_DELAY);
+  bool ok = false;
+  cleanup();
 
   if (!LittleFS.exists(path)) {
     SkellyLog.printf("[AudioPlayer] file not found: %s\n", path.c_str());
-    return false;
+  } else {
+    ok = startLocked(path);
   }
+  xSemaphoreGive(lock);
+  return ok;
+}
+
+// Starts playback of path; caller holds lock and has already cleaned up.
+bool AudioPlayer::startLocked(const String &path) {
 
   file = new AudioFileSourceLittleFS(path.c_str());
 
@@ -118,19 +142,32 @@ bool AudioPlayer::play(const String &path) {
   }
 
   currentPath = path;
+  playing = true;
   return true;
 }
 
 void AudioPlayer::stop() {
+  if (!lock) return;
+  xSemaphoreTake(lock, portMAX_DELAY);
   cleanup();
+  xSemaphoreGive(lock);
 }
 
-bool AudioPlayer::isPlaying() const {
-  return generator != nullptr && generator->isRunning();
+String AudioPlayer::currentFile() const {
+  if (!lock) return String();
+  xSemaphoreTake(lock, portMAX_DELAY);
+  String copy = currentPath;
+  xSemaphoreGive(lock);
+  return copy;
 }
 
-void AudioPlayer::loop() {
-  if (!generator) return;
+void AudioPlayer::pump() {
+  // If play()/stop() holds the lock, skip this step; the task comes back in a tick.
+  if (xSemaphoreTake(lock, 0) != pdTRUE) return;
+  if (!generator) {
+    xSemaphoreGive(lock);
+    return;
+  }
 
   uint32_t now = millis();
   if (now - lastLoopMs > maxLoopGapMs) maxLoopGapMs = now - lastLoopMs;
@@ -149,4 +186,5 @@ void AudioPlayer::loop() {
   } else {
     cleanup();
   }
+  xSemaphoreGive(lock);
 }
