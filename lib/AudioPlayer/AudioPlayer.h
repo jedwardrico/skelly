@@ -36,6 +36,8 @@ private:
   uint32_t playStartMs = 0;
   uint32_t lastLoopMs = 0;
   uint32_t maxLoopGapMs = 0;
+  uint32_t loopCalls = 0;
+  uint32_t generatorUs = 0; // time spent inside generator->loop()
 
   void cleanup();
 };

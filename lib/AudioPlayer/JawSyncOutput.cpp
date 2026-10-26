@@ -27,7 +27,10 @@ bool JawSyncOutput::ConsumeSample(int16_t sample[2]) {
   // Make room first; if the DMA queue is full the decoder just retries this
   // same sample on its next loop().
   if (staged >= kStageFrames) flushStage(0);
-  if (staged >= kStageFrames) return false;
+  if (staged >= kStageFrames) {
+    rejected++;
+    return false;
+  }
 
   float magnitude = abs(sample[0]) / 32768.0f;
   float alpha = (magnitude > g_jawEnvelope) ? JAW_ENVELOPE_ATTACK : JAW_ENVELOPE_RELEASE;
