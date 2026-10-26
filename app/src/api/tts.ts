@@ -13,6 +13,10 @@ export interface TtsVoice {
   name: string;
 }
 
+// Voice the picker starts on. It's a library voice rather than a premade one, so
+// listVoices() would filter it out; the app adds it back explicitly.
+export const DEFAULT_VOICE: TtsVoice = { id: 'PRfCKe8kdrG3nuXOAnoH', name: 'Gork' };
+
 async function errorMessage(res: Response, fallback: string): Promise<string> {
   const body = await res.json().catch(() => ({}));
   const detail = body?.detail;

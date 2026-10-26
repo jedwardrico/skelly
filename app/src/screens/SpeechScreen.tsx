@@ -18,7 +18,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
 import { buildTestWav, bytesToBlob, crc32 } from '../api/testAudio';
-import { listVoices, synthesizeSpeech, TTS_API_KEY_STORAGE_KEY, TtsVoice } from '../api/tts';
+import { DEFAULT_VOICE, listVoices, synthesizeSpeech, TTS_API_KEY_STORAGE_KEY, TtsVoice } from '../api/tts';
+import { VoicePicker } from '../components/VoicePicker';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
 
@@ -28,8 +29,14 @@ const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
 const SPEECH_CLIP = 'speech.mp3';
 const TEST_CLIP = 'app_test.wav';
 // Used when the key can't list voices (e.g. a restricted key without the
-// voices_read permission) so speech still works. "Rachel" is a premade voice.
-const FALLBACK_VOICES: TtsVoice[] = [{ id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' }];
+// voices_read permission) so speech still works.
+const FALLBACK_VOICES: TtsVoice[] = [DEFAULT_VOICE];
+
+// The account's voices, with the default pinned first even when the API didn't
+// list it (it isn't a premade voice).
+function withDefaultVoice(list: TtsVoice[]): TtsVoice[] {
+  return [DEFAULT_VOICE, ...list.filter((v) => v.id !== DEFAULT_VOICE.id)];
+}
 
 export function SpeechScreen() {
   const { client, status } = useSkelly();
@@ -45,8 +52,8 @@ export function SpeechScreen() {
   const jawOpenRef = useRef(false);
   const [useSkull, setUseSkull] = useState(true);
   const [apiKey, setApiKey] = useState('');
-  const [skullVoice, setSkullVoice] = useState<string | undefined>(undefined);
-  const [skullVoices, setSkullVoices] = useState<TtsVoice[]>([]);
+  const [skullVoice, setSkullVoice] = useState<string | undefined>(DEFAULT_VOICE.id);
+  const [skullVoices, setSkullVoices] = useState<TtsVoice[]>(FALLBACK_VOICES);
   const [voicesError, setVoicesError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'synthesizing' | 'uploading' | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
@@ -74,22 +81,21 @@ export function SpeechScreen() {
   // Load the account's voices once a key is entered (debounced while typing).
   useEffect(() => {
     if (!apiKey.trim()) {
-      setSkullVoices([]);
+      setSkullVoices(FALLBACK_VOICES);
       setVoicesError(null);
       return;
     }
     const timer = setTimeout(() => {
       listVoices(apiKey.trim())
         .then((list) => {
-          const usable = list.length > 0 ? list : FALLBACK_VOICES;
+          const usable = withDefaultVoice(list);
           setVoicesError(null);
           setSkullVoices(usable);
-          setSkullVoice((cur) => (usable.some((v) => v.id === cur) ? cur : usable[0].id));
+          setSkullVoice((cur) => (usable.some((v) => v.id === cur) ? cur : DEFAULT_VOICE.id));
         })
         .catch((err) => {
           setVoicesError(err instanceof Error ? err.message : 'Could not load voices');
           setSkullVoices(FALLBACK_VOICES);
-          setSkullVoice((cur) => cur ?? FALLBACK_VOICES[0].id);
         });
     }, 600);
     return () => clearTimeout(timer);
@@ -256,25 +262,7 @@ export function SpeechScreen() {
       {useSkull && (
         <>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Voice</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.voiceRow}>
-            {skullVoices.map((v) => (
-              <Pressable
-                key={v.id}
-                style={[styles.voiceChip, { backgroundColor: colors.surface }, skullVoice === v.id && { backgroundColor: colors.accent }]}
-                onPress={() => changeSkullVoice(v.id)}
-              >
-                <Text
-                  style={[
-                    styles.voiceChipText,
-                    { color: colors.textPrimary },
-                    skullVoice === v.id && { color: colors.accentText, fontWeight: '700' },
-                  ]}
-                >
-                  {v.name}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <VoicePicker voices={skullVoices} selectedId={skullVoice} onSelect={changeSkullVoice} />
           {voicesError && (
             <Text style={[styles.hint, { color: colors.danger }]}>
               Couldn't load your voices ({voicesError}). Using a default voice instead.
