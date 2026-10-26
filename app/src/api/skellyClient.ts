@@ -8,6 +8,8 @@ export interface SkellyStatus {
   playing: boolean;
   file: string | null;
   jawLevel: number;
+  // Output volume, 0.0-1.0.
+  volume: number;
   servos: Partial<Record<ServoName, number>>;
   // Each servo's current effective rest/"zero" angle, as persisted on the
   // device (survives reboot) - see POST /api/servo/zero in docs/API.md.
@@ -32,6 +34,7 @@ const DEFAULT_STATUS: SkellyStatus = {
   playing: false,
   file: null,
   jawLevel: 0,
+  volume: 0.6,
   servos: {},
   servoZero: {},
 };
@@ -140,6 +143,7 @@ export class SkellyClient {
             playing: !!msg.playing,
             file: msg.file ?? null,
             jawLevel: typeof msg.jawLevel === 'number' ? msg.jawLevel : 0,
+            volume: typeof msg.volume === 'number' ? msg.volume : DEFAULT_STATUS.volume,
             servos: msg.servos ?? {},
             servoZero: msg.servoZero ?? {},
           });
@@ -206,6 +210,7 @@ export class SkellyClient {
       playing: !!body.playing,
       file: body.file ?? null,
       jawLevel: typeof body.jawLevel === 'number' ? body.jawLevel : 0,
+      volume: typeof body.volume === 'number' ? body.volume : DEFAULT_STATUS.volume,
       servos: body.servos ?? {},
       servoZero: body.servoZero ?? {},
     };
@@ -277,6 +282,12 @@ export class SkellyClient {
   async stop(): Promise<boolean> {
     if (this.send({ cmd: 'stop' })) return true;
     const body = await this.request('/api/stop', { method: 'POST' });
+    return !!body.ok;
+  }
+
+  async setVolume(volume: number): Promise<boolean> {
+    if (this.send({ cmd: 'volume', volume })) return true;
+    const body = await this.request('/api/volume', { method: 'POST', body: JSON.stringify({ volume }) });
     return !!body.ok;
   }
 

@@ -27,6 +27,7 @@ import {
 } from '../api/tts';
 import { VoicePicker } from '../components/VoicePicker';
 import { ClipLibrary } from '../components/ClipLibrary';
+import { VolumeSlider } from '../components/VolumeSlider';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
 
@@ -212,6 +213,7 @@ export function SpeechScreen() {
         >
           <Text style={styles.stopButtonText}>Stop</Text>
         </Pressable>
+        <VolumeSlider />
       </View>
 
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Text to speech</Text>
