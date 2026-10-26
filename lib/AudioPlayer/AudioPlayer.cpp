@@ -59,6 +59,13 @@ void AudioPlayer::cleanup() {
         "[AudioPlayer] done %s: %u ms audio @ %d Hz in %u ms wall, longest loop gap %u ms, free heap %u, free psram %u\n",
         currentPath.c_str(), (unsigned)audioMs, s_out->rate, (unsigned)wallMs,
         (unsigned)maxLoopGapMs, (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getFreePsram());
+    // Where did the time go? generator = decode+output work inside
+    // generator->loop(); rejected = times the I2S queue was full (a high count
+    // with low generator time means the amp is the bottleneck, not the CPU).
+    SkellyLog.printf(
+        "[AudioPlayer] timing: cpu %u MHz, %u loop calls, %u ms in generator, %u ms elsewhere, %u rejected samples\n",
+        (unsigned)getCpuFrequencyMhz(), (unsigned)loopCalls, (unsigned)(generatorUs / 1000),
+        (unsigned)(wallMs - generatorUs / 1000), (unsigned)s_out->rejected);
   }
   if (generator) {
     generator->stop();
@@ -100,6 +107,9 @@ bool AudioPlayer::play(const String &path) {
   s_out->rate = 0;
   playStartMs = lastLoopMs = millis();
   maxLoopGapMs = 0;
+  loopCalls = 0;
+  generatorUs = 0;
+  s_out->rejected = 0;
 
   if (!generator->begin(file, s_out)) {
     SkellyLog.printf("[AudioPlayer] failed to start: %s\n", path.c_str());
@@ -127,7 +137,11 @@ void AudioPlayer::loop() {
   lastLoopMs = now;
 
   if (generator->isRunning()) {
-    if (!generator->loop()) {
+    uint32_t t0 = micros();
+    bool more = generator->loop();
+    generatorUs += micros() - t0;
+    loopCalls++;
+    if (!more) {
       // Playback finished (or errored) on this call; tear down so isPlaying()
       // reflects it immediately instead of one loop() iteration late.
       cleanup();

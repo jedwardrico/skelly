@@ -27,6 +27,7 @@ public:
   // Playback stats for diagnosing underruns: samples actually accepted and
   // the sample rate the decoder asked for.
   uint32_t samplesConsumed = 0;
+  uint32_t rejected = 0; // ConsumeSample() refusals: I2S queue was full (backpressure)
   int rate = 0;
 
 private:
