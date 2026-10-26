@@ -17,17 +17,22 @@ import { useSkelly } from '../context/SkellyContext';
 import { useTheme } from '../theme/ThemeContext';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { SERVO_LIST } from '../api/servoConfig';
-import { buildTestWav, bytesToBlob, crc32 } from '../api/testAudio';
-import { DEFAULT_VOICE, listVoices, synthesizeSpeech, TTS_API_KEY_STORAGE_KEY, TtsVoice } from '../api/tts';
+import {
+  DEFAULT_VOICE,
+  listVoices,
+  SKULL_SPEAKER_STORAGE_KEY,
+  synthesizeSpeech,
+  TTS_API_KEY_STORAGE_KEY,
+  TtsVoice,
+} from '../api/tts';
 import { VoicePicker } from '../components/VoicePicker';
+import { ClipLibrary } from '../components/ClipLibrary';
 
 const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
 
-const SKULL_STORAGE_KEY = 'skelly:speech:skull';
 const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
 // Fixed name so repeated speech overwrites one clip instead of filling LittleFS.
 const SPEECH_CLIP = 'speech.mp3';
-const TEST_CLIP = 'app_test.wav';
 // Used when the key can't list voices (e.g. a restricted key without the
 // voices_read permission) so speech still works.
 const FALLBACK_VOICES: TtsVoice[] = [DEFAULT_VOICE];
@@ -56,23 +61,18 @@ export function SpeechScreen() {
   const [skullVoices, setSkullVoices] = useState<TtsVoice[]>(FALLBACK_VOICES);
   const [voicesError, setVoicesError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'synthesizing' | 'uploading' | null>(null);
-  const [testResult, setTestResult] = useState<string | null>(null);
 
   useEffect(() => {
-    AsyncStorage.multiGet([SKULL_STORAGE_KEY, TTS_API_KEY_STORAGE_KEY, SKULL_VOICE_STORAGE_KEY])
+    AsyncStorage.multiGet([SKULL_SPEAKER_STORAGE_KEY, TTS_API_KEY_STORAGE_KEY, SKULL_VOICE_STORAGE_KEY])
       .then((pairs) => {
         const saved = Object.fromEntries(pairs);
-        if (saved[SKULL_STORAGE_KEY] != null) setUseSkull(saved[SKULL_STORAGE_KEY] === '1');
+        if (saved[SKULL_SPEAKER_STORAGE_KEY] != null) setUseSkull(saved[SKULL_SPEAKER_STORAGE_KEY] === '1');
         if (saved[TTS_API_KEY_STORAGE_KEY]) setApiKey(saved[TTS_API_KEY_STORAGE_KEY]!);
         if (saved[SKULL_VOICE_STORAGE_KEY]) setSkullVoice(saved[SKULL_VOICE_STORAGE_KEY]!);
       })
       .catch(() => {});
   }, []);
 
-  const changeUseSkull = (v: boolean) => {
-    setUseSkull(v);
-    AsyncStorage.setItem(SKULL_STORAGE_KEY, v ? '1' : '0').catch(() => {});
-  };
   const changeSkullVoice = (v: string) => {
     setSkullVoice(v);
     AsyncStorage.setItem(SKULL_VOICE_STORAGE_KEY, v).catch(() => {});
@@ -150,31 +150,6 @@ export function SpeechScreen() {
     }
   };
 
-  // Uploads a generated WAV and plays it - no ElevenLabs involved. Compares the
-  // CRC-32 the firmware computed against ours to tell a corrupted transfer
-  // from a wiring/decode problem.
-  const sendTestTone = async () => {
-    try {
-      setBusy('uploading');
-      setTestResult(null);
-      const bytes = buildTestWav();
-      const expected = crc32(bytes);
-      await client.stop().catch(() => {});
-      const info = await client.uploadBlobInfo(await bytesToBlob(bytes, 'audio/wav'), TEST_CLIP);
-      const match = info.crc32 === expected && info.size === bytes.length;
-      setTestResult(
-        match
-          ? `Transfer OK (${bytes.length} bytes, CRC ${expected.toString(16)}). Garbling now = wiring/power.`
-          : `Transfer CORRUPTED: sent ${bytes.length} bytes / CRC ${expected.toString(16)}, skull got ${info.size} / ${info.crc32?.toString(16)}.`,
-      );
-      await client.play(TEST_CLIP);
-    } catch (err) {
-      Alert.alert('Test tone failed', err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const speak = () => {
     if (!text.trim()) return;
     if (useSkull) {
@@ -223,6 +198,9 @@ export function SpeechScreen() {
       </View>
 
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Text to speech</Text>
+      <Text style={[styles.hint, { color: colors.textMuted, marginBottom: 8 }]}>
+        Playing on {useSkull ? "the skull's speaker" : "this phone's speaker"} (change in the Setup tab).
+      </Text>
       <TextInput
         style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
         multiline
@@ -319,18 +297,6 @@ export function SpeechScreen() {
         </>
       )}
 
-      <View style={[styles.puppetRow, { backgroundColor: colors.surface }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.puppetLabel, { color: colors.textPrimary }]}>Play through skull speaker</Text>
-          <Text style={[styles.hint, { color: colors.textMuted }]}>
-            Generates speech with ElevenLabs, uploads it to the skull and plays it
-            on its amp, with the jaw following the real audio. Off plays on
-            this phone instead.
-          </Text>
-        </View>
-        <Switch value={useSkull} onValueChange={changeUseSkull} trackColor={{ true: colors.accent }} />
-      </View>
-
       {!useSkull && (
       <View style={[styles.puppetRow, { backgroundColor: colors.surface }]}>
         <View style={{ flex: 1 }}>
@@ -352,19 +318,7 @@ export function SpeechScreen() {
         <Text style={styles.speakButtonText}>{buttonLabel}</Text>
       </Pressable>
 
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Audio test</Text>
-      <Pressable
-        style={[styles.testButton, { borderColor: colors.accent }, !!busy && { opacity: 0.6 }]}
-        disabled={!!busy}
-        onPress={sendTestTone}
-      >
-        <Text style={[styles.testButtonText, { color: colors.accent }]}>Send test tone to skull</Text>
-      </Pressable>
-      <Text style={[styles.hint, { color: colors.textMuted }]}>
-        Uploads and plays a generated WAV (no ElevenLabs credits) and checks the
-        bytes arrived intact.
-      </Text>
-      {testResult && <Text style={[styles.hint, { color: colors.textPrimary }]}>{testResult}</Text>}
+      <ClipLibrary />
     </ScrollView>
   );
 }
@@ -410,7 +364,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  testButton: { borderWidth: 2, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  testButtonText: { fontWeight: '700', fontSize: 15 },
   speakButtonText: { color: '#fff', fontWeight: '700', fontSize: 17 },
 });

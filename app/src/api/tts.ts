@@ -6,6 +6,10 @@
 // AsyncStorage key the Setup tab saves the API key under and Speech reads.
 export const TTS_API_KEY_STORAGE_KEY = 'skelly:speech:elevenLabsKey';
 
+// AsyncStorage key for the Setup tab's "play through skull speaker" switch, which
+// the Speech tab reads ('1' = skull speaker, '0' = this phone).
+export const SKULL_SPEAKER_STORAGE_KEY = 'skelly:speech:skull';
+
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
 export interface TtsVoice {
