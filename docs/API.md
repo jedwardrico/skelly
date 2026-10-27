@@ -131,7 +131,7 @@ returns only lines newer than that sequence number. `seq` counts lines since
 boot, so it restarts at 1 after a reboot.
 
 ```json
-{ "latest": 152, "lines": [{ "seq": 151, "text": "[ControlAPI] upload starting -> /audio/speech.mp3" }] }
+{ "latest": 152, "lines": [{ "seq": 151, "text": "[ControlAPI] upload starting -> /audio/tts.mp3" }] }
 ```
 
 ## WebSocket (`/ws`)
