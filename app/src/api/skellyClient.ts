@@ -321,4 +321,21 @@ export class SkellyClient {
     });
     return !!body.ok;
   }
+
+  // Jaw/eye animation tuning persisted on the device (see GET /api/animation).
+  async getAnimation(): Promise<{ settings: Record<string, number>; defaults: Record<string, number> }> {
+    const body = await this.request('/api/animation');
+    return { settings: body.settings ?? {}, defaults: body.defaults ?? {} };
+  }
+
+  // Partial update; any subset of keys. The device clamps and persists them.
+  async setAnimation(values: Record<string, number>): Promise<boolean> {
+    const body = await this.request('/api/animation', { method: 'POST', body: JSON.stringify(values) });
+    return !!body.ok;
+  }
+
+  async resetAnimation(): Promise<boolean> {
+    const body = await this.request('/api/animation/reset', { method: 'POST' });
+    return !!body.ok;
+  }
 }

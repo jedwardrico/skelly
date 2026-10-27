@@ -1,6 +1,8 @@
 #include "JawSyncOutput.h"
 #include "Config.h"
 #include "AudioPlayer.h"
+#include "AnimationSettings.h"
+#include <math.h>
 
 bool JawSyncOutput::begin() {
   staged = 0;
@@ -30,7 +32,10 @@ bool JawSyncOutput::ConsumeSample(int16_t sample[2]) {
   if (staged >= kStageFrames) return false;
 
   float magnitude = abs(sample[0]) / 32768.0f;
-  float alpha = (magnitude > g_jawEnvelope) ? JAW_ENVELOPE_ATTACK : JAW_ENVELOPE_RELEASE;
+  // Per-sample smoothing factor from the configured time constant.
+  float sr = rate > 0 ? (float)rate : 44100.0f;
+  float tauMs = (magnitude > g_jawEnvelope) ? g_anim.jawAttackMs : g_anim.jawReleaseMs;
+  float alpha = 1.0f - expf(-1000.0f / (tauMs * sr));
   g_jawEnvelope += (magnitude - g_jawEnvelope) * alpha;
 
   // Same shaping the stock ConsumeSample() applies before its write.

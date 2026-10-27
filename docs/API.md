@@ -95,6 +95,19 @@ configured min/max. Does **not** move the servo; follow with `/api/servo` if
 you want it to jump there too. Response: `{"ok":true}` or
 `{"ok":false,"error":"..."}`.
 
+### `GET /api/animation`, `POST /api/animation`, `POST /api/animation/reset`
+
+Jaw and eye animation tuning, persisted to flash (NVS) and applied live.
+`GET` returns `{"settings":{...},"defaults":{...}}`. `POST` takes any subset
+of the setting keys with numeric values (clamped to each setting's range) and
+returns `{"ok":true}`; `reset` clears all overrides.
+
+Keys: `jawGain`, `jawOpenFloor`, `jawSilence`, `jawAttackMs`, `jawReleaseMs`,
+`jawUpdateMs`, `eyeDartChance`, `eyeWanderPan`, `eyeWanderTilt`,
+`eyeWanderSpeed`, `eyeDartPan`, `eyeDartTilt`, `eyeDartSpeed`,
+`eyeIntervalMinMs`, `eyeIntervalMaxMs`, `eyeReturnSpeed`. Defaults and ranges
+live in `include/Config.h` and `lib/AnimationSettings`.
+
 ### `POST /api/upload`
 
 `multipart/form-data` with a single file field. The uploaded filename (path
