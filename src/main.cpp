@@ -106,6 +106,13 @@ void loop() {
       }
     }
     if (jaw) {
+      if (level > JAW_SILENCE_LEVEL) {
+        level = fminf(level * JAW_LEVEL_GAIN, 1.0f);
+        level = sqrtf(level);
+        level = fmaxf(level, JAW_SPEECH_OPEN_FLOOR);
+      } else {
+        level = 0.0f;
+      }
       float angle = jaw->minAngle + level * (jaw->maxAngle - jaw->minAngle);
       // A servo write blocks this core for ~40ms, so cap the jaw to ~16 updates/s
       // and ignore sub-degree changes; plenty for a mouth, and it keeps loop()

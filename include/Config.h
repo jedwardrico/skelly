@@ -70,8 +70,20 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 #define AUDIO_I2S_DMA_BUFFER_BYTES 2304
 
 // Jaw envelope follower: higher = snappier/twitchier, lower = smoother/laggier.
-#define JAW_ENVELOPE_ATTACK 0.35f
-#define JAW_ENVELOPE_RELEASE 0.08f
+// These are applied per audio sample (~44.1kHz), so 0.004 is roughly a 5ms
+// attack and 0.0003 roughly a 75ms release.
+#define JAW_ENVELOPE_ATTACK 0.004f
+// Slow release: between quick syllables the jaw only partly closes instead of
+// snapping shut, since the servo can't fully close in the gap anyway.
+#define JAW_ENVELOPE_RELEASE 0.0003f
+// Raw speech peaks sit well below full scale, so boost the envelope before
+// mapping to the jaw range (result is clamped to 1.0), then apply a sqrt-style
+// curve so quiet syllables still open the mouth noticeably.
+#define JAW_LEVEL_GAIN 4.0f
+// While speech is above the silence threshold the jaw never drops below this
+// fraction of its range, keeping it biased open between beats.
+#define JAW_SPEECH_OPEN_FLOOR 0.35f
+#define JAW_SILENCE_LEVEL 0.02f
 
 // ---------------------------------------------------------------------------
 // WiFi / control API
