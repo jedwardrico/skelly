@@ -9,6 +9,7 @@ import { SERVO_LIST, VISIBLE_SERVO_LIST } from '../api/servoConfig';
 import type { ServoName } from '../api/skellyClient';
 import { SKULL_SPEAKER_STORAGE_KEY, TTS_API_KEY_STORAGE_KEY } from '../api/tts';
 import { AudioTest } from '../components/AudioTest';
+import { AnimationSettingsCard } from '../components/AnimationSettingsCard';
 
 function ServoZeroRow({ name, label, min, max }: { name: ServoName; label: string; min: number; max: number }) {
   const { client, status } = useSkelly();
@@ -244,6 +245,12 @@ export function ServoConfigScreen() {
 
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Audio test</Text>
       <AudioTest />
+
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 24 }]}>Jaw & eye animation</Text>
+      <Text style={[styles.hint, { color: colors.textMuted }]}>
+        Tune how far and how fast the jaw and eyes move while speaking. Changes are applied live and saved on the skull.
+      </Text>
+      <AnimationSettingsCard />
 
       <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 24 }]}>Servo zero calibration</Text>
       <Text style={[styles.hint, { color: colors.textMuted }]}>

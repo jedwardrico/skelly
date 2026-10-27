@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <AsyncJson.h>
 #include <LittleFS.h>
+#include "AnimationSettings.h"
 
 void ControlAPI::begin() {
   connectWifi();
@@ -159,6 +160,30 @@ void ControlAPI::setupRoutes() {
                       ok ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"volume command failed\"}");
       });
   server.addHandler(volumeHandler_);
+
+  server.on("/api/animation", HTTP_GET, [](AsyncWebServerRequest *request) {
+    JsonDocument doc;
+    AnimSettings::toJson(doc["settings"].to<JsonObject>());
+    JsonObject defaults = doc["defaults"].to<JsonObject>();
+    for (size_t i = 0; i < kAnimParamCount; i++) defaults[kAnimParams[i].key] = kAnimParams[i].defaultValue;
+    String body;
+    serializeJson(doc, body);
+    request->send(200, "application/json", body);
+  });
+
+  // Partial update: any subset of the keys from GET /api/animation.
+  AsyncCallbackJsonWebHandler *animationSet_ = new AsyncCallbackJsonWebHandler(
+      "/api/animation", [](AsyncWebServerRequest *request, JsonVariant &json) {
+        int applied = AnimSettings::applyJson(json.as<JsonObjectConst>());
+        request->send(applied ? 200 : 400, "application/json",
+                      applied ? "{\"ok\":true}" : "{\"ok\":false,\"error\":\"no valid settings\"}");
+      });
+  server.addHandler(animationSet_);
+
+  server.on("/api/animation/reset", HTTP_POST, [](AsyncWebServerRequest *request) {
+    AnimSettings::reset();
+    request->send(200, "application/json", "{\"ok\":true}");
+  });
 
   AsyncCallbackJsonWebHandler *servoHandler_ = new AsyncCallbackJsonWebHandler(
       "/api/servo", [this](AsyncWebServerRequest *request, JsonVariant &json) {

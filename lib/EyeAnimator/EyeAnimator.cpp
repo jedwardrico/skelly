@@ -1,20 +1,7 @@
 #include "EyeAnimator.h"
+#include "AnimationSettings.h"
 
 namespace {
-// Wander: slower, wider glances.
-const float kWanderPanRangeDeg = 30.0f;
-const float kWanderTiltRangeDeg = 18.0f;
-const float kWanderSpeedDegPerSec = 45.0f;
-
-// Dart: quick, small saccades.
-const float kDartPanRangeDeg = 12.0f;
-const float kDartTiltRangeDeg = 8.0f;
-const float kDartSpeedDegPerSec = 220.0f;
-
-const uint32_t kMoveIntervalMinMs = 350;
-const uint32_t kMoveIntervalMaxMs = 1800;
-const float kRestReturnSpeedDegPerSec = 60.0f;
-
 // Random offset in [-rangeDeg, +rangeDeg], with millidegree resolution.
 float randomOffset(float rangeDeg) {
   return (float)random(-1000, 1001) / 1000.0f * rangeDeg;
@@ -26,17 +13,17 @@ void EyeAnimator::begin(ServoController *servos_) {
 }
 
 void EyeAnimator::pickNewTarget() {
-  bool dart = random(0, 2) == 0;
-  float panRange = dart ? kDartPanRangeDeg : kWanderPanRangeDeg;
-  float tiltRange = dart ? kDartTiltRangeDeg : kWanderTiltRangeDeg;
-  float speed = dart ? kDartSpeedDegPerSec : kWanderSpeedDegPerSec;
+  bool dart = random(0, 1000) < (long)(g_anim.eyeDartChance * 1000.0f);
+  float panRange = dart ? g_anim.eyeDartPan : g_anim.eyeWanderPan;
+  float tiltRange = dart ? g_anim.eyeDartTilt : g_anim.eyeWanderTilt;
+  float speed = dart ? g_anim.eyeDartSpeed : g_anim.eyeWanderSpeed;
 
   float pan = servos->restAngle("eye_pan") + randomOffset(panRange);
   float tilt = servos->restAngle("eye_tilt") + randomOffset(tiltRange);
   servos->setTarget("eye_pan", pan, speed);
   servos->setTarget("eye_tilt", tilt, speed);
 
-  nextMoveAtMs = millis() + random((long)kMoveIntervalMinMs, (long)kMoveIntervalMaxMs);
+  nextMoveAtMs = millis() + random((long)g_anim.eyeIntervalMinMs, (long)max(g_anim.eyeIntervalMinMs, g_anim.eyeIntervalMaxMs) + 1);
 }
 
 void EyeAnimator::update(bool talking) {
@@ -44,8 +31,8 @@ void EyeAnimator::update(bool talking) {
 
   if (!talking) {
     if (wasTalking) {
-      servos->setTarget("eye_pan", servos->restAngle("eye_pan"), kRestReturnSpeedDegPerSec);
-      servos->setTarget("eye_tilt", servos->restAngle("eye_tilt"), kRestReturnSpeedDegPerSec);
+      servos->setTarget("eye_pan", servos->restAngle("eye_pan"), g_anim.eyeReturnSpeed);
+      servos->setTarget("eye_tilt", servos->restAngle("eye_tilt"), g_anim.eyeReturnSpeed);
       wasTalking = false;
     }
     return;

@@ -5,6 +5,7 @@
 #include "AudioPlayer.h"
 #include "ControlAPI.h"
 #include "EyeAnimator.h"
+#include "AnimationSettings.h"
 #ifdef ENABLE_BLUEPAD32
 #include "GamepadController.h"
 #endif
@@ -35,6 +36,7 @@ void setup() {
   delay(200);
   SkellyLog.println("\n[Skelly] booting");
 
+  AnimSettings::begin();
   servos.begin();
 
   if (!audio.begin()) {
@@ -106,10 +108,10 @@ void loop() {
       }
     }
     if (jaw) {
-      if (level > JAW_SILENCE_LEVEL) {
-        level = fminf(level * JAW_LEVEL_GAIN, 1.0f);
+      if (level > g_anim.jawSilence) {
+        level = fminf(level * g_anim.jawGain, 1.0f);
         level = sqrtf(level);
-        level = fmaxf(level, JAW_SPEECH_OPEN_FLOOR);
+        level = fmaxf(level, g_anim.jawOpenFloor);
       } else {
         level = 0.0f;
       }
@@ -120,7 +122,7 @@ void loop() {
       static uint32_t lastJawMs = 0;
       static float lastJawAngle = -1000.0f;
       uint32_t nowMs = millis();
-      if (nowMs - lastJawMs >= JAW_UPDATE_MIN_INTERVAL_MS && fabsf(angle - lastJawAngle) >= 1.0f) {
+      if (nowMs - lastJawMs >= (uint32_t)g_anim.jawUpdateMs && fabsf(angle - lastJawAngle) >= 1.0f) {
         servos.setAngle(JAW_SERVO_NAME, angle);
         lastJawMs = nowMs;
         lastJawAngle = angle;

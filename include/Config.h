@@ -69,13 +69,14 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 #define AUDIO_I2S_DMA_BUFFERS 10
 #define AUDIO_I2S_DMA_BUFFER_BYTES 2304
 
-// Jaw envelope follower: higher = snappier/twitchier, lower = smoother/laggier.
-// These are applied per audio sample (~44.1kHz), so 0.004 is roughly a 5ms
-// attack and 0.0003 roughly a 75ms release.
-#define JAW_ENVELOPE_ATTACK 0.004f
-// Slow release: between quick syllables the jaw only partly closes instead of
-// snapping shut, since the servo can't fully close in the gap anyway.
-#define JAW_ENVELOPE_RELEASE 0.0003f
+// Jaw / eye animation defaults. Every value here can be overridden at runtime
+// from the app's setup screen (persisted in NVS) - see AnimationSettings.
+//
+// Jaw envelope follower time constants: lower = snappier/twitchier, higher =
+// smoother/laggier. A slow release means that between quick syllables the jaw
+// only partly closes instead of snapping shut.
+#define JAW_ENVELOPE_ATTACK_MS 5.0f
+#define JAW_ENVELOPE_RELEASE_MS 75.0f
 // Raw speech peaks sit well below full scale, so boost the envelope before
 // mapping to the jaw range (result is clamped to 1.0), then apply a sqrt-style
 // curve so quiet syllables still open the mouth noticeably.
@@ -84,6 +85,19 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 // fraction of its range, keeping it biased open between beats.
 #define JAW_SPEECH_OPEN_FLOOR 0.35f
 #define JAW_SILENCE_LEVEL 0.02f
+
+// Eye animation while talking: "wander" = slower, wider glance; "dart" = quick,
+// small saccade. Angles are +/- degrees around the eye's rest angle.
+#define EYE_DART_CHANCE 0.5f
+#define EYE_WANDER_PAN_DEG 30.0f
+#define EYE_WANDER_TILT_DEG 18.0f
+#define EYE_WANDER_SPEED_DPS 45.0f
+#define EYE_DART_PAN_DEG 12.0f
+#define EYE_DART_TILT_DEG 8.0f
+#define EYE_DART_SPEED_DPS 220.0f
+#define EYE_INTERVAL_MIN_MS 350.0f
+#define EYE_INTERVAL_MAX_MS 1800.0f
+#define EYE_REST_RETURN_SPEED_DPS 60.0f
 
 // ---------------------------------------------------------------------------
 // WiFi / control API
