@@ -33,7 +33,7 @@ const JAW = SERVO_LIST.find((s) => s.name === 'jaw')!;
 
 const SKULL_VOICE_STORAGE_KEY = 'skelly:speech:skullVoice';
 // Fixed name so repeated speech overwrites one clip instead of filling LittleFS.
-const SPEECH_CLIP = 'speech.mp3';
+const SPEECH_CLIP = 'tts.mp3';
 // Used when the key can't list voices (e.g. a restricted key without the
 // voices_read permission) so speech still works.
 const FALLBACK_VOICES: TtsVoice[] = [DEFAULT_VOICE];

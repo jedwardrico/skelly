@@ -38,7 +38,7 @@ WiFi, plus on-device text-to-speech.
 The Speech tab's "Play through skull speaker" switch (on by default) sends
 the typed text to ElevenLabs' TTS API (`eleven_v4`, key entered in the
 Setup tab and stored locally in `AsyncStorage`), uploads the returned mp3 to the
-skull as `speech.mp3` (`POST /api/upload`), and triggers `play`. The audio
+skull as `tts.mp3` (`POST /api/upload`), and triggers `play`. The audio
 comes out of the MAX98357A amp and the existing audio-envelope jaw sync
 (`lib/AudioPlayer/JawSyncOutput`) drives the jaw from the real waveform.
 The phone needs internet for the TTS call as well as a route to the skull.
