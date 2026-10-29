@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { useSkelly } from '../context/SkellyContext';
@@ -54,13 +54,12 @@ function ParamRow({
 }
 
 export function AnimationSettingsCard() {
-  const { client, status } = useSkelly();
+  const { client, connectionState } = useSkelly();
   const { colors } = useTheme();
   const [values, setValues] = useState<AnimationValues | null>(null);
   const [defaults, setDefaults] = useState<AnimationValues>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const connected = useRef(false);
 
   const load = useCallback(() => {
     client
@@ -73,12 +72,10 @@ export function AnimationSettingsCard() {
       .catch((err) => setError(String(err?.message ?? err)));
   }, [client]);
 
-  // Reload whenever we (re)connect to a skull; status updates stream in once connected.
-  const hasStatus = Object.keys(status.servos).length > 0;
+  // Load on mount if already connected, and reload whenever we (re)connect or the client changes.
   useEffect(() => {
-    if (hasStatus && !connected.current) load();
-    connected.current = hasStatus;
-  }, [hasStatus, load]);
+    if (connectionState === 'connected') load();
+  }, [connectionState, load]);
 
   const commit = (key: string, v: number) => {
     setValues((prev) => (prev ? { ...prev, [key]: v } : prev));
