@@ -2,7 +2,7 @@
 
 #include "ServoController.h"
 
-// Drives `eye_pan`/`eye_tilt` with small autonomous movements while Skelly
+// Drives `eye_tilt` (eye_pan is currently unused) with small autonomous movements while Skelly
 // is talking, so the eyes aren't dead-still during speech. Each time the
 // eyes settle on a target, one of two animations is picked at random:
 //   - Wander: a slower, wider glance, as if looking around at the audience.

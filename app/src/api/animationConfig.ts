@@ -40,7 +40,6 @@ export const ANIMATION_GROUPS: AnimGroup[] = [
   {
     title: 'Eyes: wander (slow glance)',
     params: [
-      { key: 'eyeWanderPan', label: 'Pan range', hint: 'Degrees left/right from rest.', min: 0, max: 90, step: 1, unit: '°' },
       { key: 'eyeWanderTilt', label: 'Tilt range', hint: 'Degrees up/down from rest.', min: 0, max: 90, step: 1, unit: '°' },
       { key: 'eyeWanderSpeed', label: 'Speed', hint: 'Lower is smoother and lazier.', min: 5, max: 400, step: 5, unit: '°/s' },
     ],
@@ -48,7 +47,6 @@ export const ANIMATION_GROUPS: AnimGroup[] = [
   {
     title: 'Eyes: dart (quick flick)',
     params: [
-      { key: 'eyeDartPan', label: 'Pan range', hint: 'Degrees left/right from rest.', min: 0, max: 90, step: 1, unit: '°' },
       { key: 'eyeDartTilt', label: 'Tilt range', hint: 'Degrees up/down from rest.', min: 0, max: 90, step: 1, unit: '°' },
       { key: 'eyeDartSpeed', label: 'Speed', hint: 'Higher is snappier.', min: 5, max: 600, step: 5, unit: '°/s' },
     ],
