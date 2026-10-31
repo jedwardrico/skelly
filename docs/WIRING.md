@@ -8,12 +8,6 @@ module later. It's still the same ESP32 chip BluePad32 targets, with both
 classic Bluetooth and BLE for whatever controller/protocol the 8BitDo
 Ultimate ends up pairing with.
 
-If your WROVER module is an original (non-"B"/"E") revision, GPIO 16 and 17
-are reserved for the module's PSRAM and unavailable as GPIO - move
-`neck_left`/`neck_right` off those pins in `include/Config.h` (and the table
-below) if so. Nearly all WROVER modules sold today are WROVER-B/-E, which
-free GPIO 16/17 for normal use, so the default wiring below assumes that.
-
 All pin numbers below live in `include/Config.h` — change them there, not in
 code, if your wiring differs.
 
@@ -48,8 +42,8 @@ itself over software PWM (via the `ESP32Servo` library), one GPIO per servo:
 | Servo pin (signal) | ESP32 GPIO |
 |---------------------|------------|
 | `jaw`               | GPIO 13    |
-| `neck_left`         | GPIO 16    |
-| `neck_right`        | GPIO 17    |
+| `neck_left`         | GPIO 32    |
+| `neck_right`        | GPIO 33    |
 | `neck_yaw`          | GPIO 4     |
 | `eye_pan`           | GPIO 18    |
 | `eye_tilt`          | GPIO 19    |
@@ -116,11 +110,11 @@ inside most 3D-printed skull cavities.
 
 Chosen specifically so the servo pins and the I2S bus don't share any pins:
 
-- Servos: GPIO 13 (jaw), GPIO 16 (neck_left), GPIO 17 (neck_right), GPIO 4
+- Servos: GPIO 13 (jaw), GPIO 32 (neck_left), GPIO 33 (neck_right), GPIO 4
   (neck_yaw), GPIO 18 (eye_pan), GPIO 19 (eye_tilt)
 - I2S (MAX98357A): GPIO 26 (BCLK), GPIO 25 (LRC), GPIO 27 (DIN), GPIO 14 (amp enable, optional)
 
-GPIO 4/13/16-19/25-27 are all safe general-purpose pins on a WROVER-B/-E
+GPIO 4/13/18/19/25-27/32/33 are all safe general-purpose pins on a WROVER-B/-E
 module (no strapping/flash/PSRAM conflicts). If you move things around,
 avoid GPIO 6-11 (connected to the module's internal flash), treat GPIO
 0/2/5/12/15 as strapping pins to leave alone unless you know what you're

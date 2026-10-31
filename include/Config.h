@@ -50,8 +50,8 @@ struct ServoChannelDef {
 // rotates the whole head assembly at the base.
 static const ServoChannelDef SERVO_CHANNELS[] = {
     {"jaw", 13, 0, 30, 0},
-    {"neck_left", 16, 60, 120, 90},
-    {"neck_right", 17, 60, 120, 90},
+    {"neck_left", 32, 60, 120, 90},
+    {"neck_right", 33, 60, 120, 90},
     {"neck_yaw", 4, 30, 150, 90},
     {"eye_pan", 18, 0, 180, 90},
     {"eye_tilt", 19, 0, 180, 90},
