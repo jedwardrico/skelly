@@ -57,6 +57,38 @@ export const ANIMATION_GROUPS: AnimGroup[] = [
       { key: 'eyeReturnSpeed', label: 'Return-to-rest speed', hint: 'How fast the eyes ease back to zero when speech ends.', min: 5, max: 400, step: 5, unit: '°/s' },
     ],
   },
+  {
+    title: 'Neck: variety',
+    params: [
+      { key: 'neckDartChance', label: 'Dart chance', hint: 'How often a move is a quick flick instead of a slow wander.', min: 0, max: 1, step: 0.05 },
+      { key: 'neckIntervalMinMs', label: 'Pause (min)', hint: 'Shortest pause between neck moves.', min: 200, max: 15000, step: 100, unit: 'ms' },
+      { key: 'neckIntervalMaxMs', label: 'Pause (max)', hint: 'Longest pause between neck moves.', min: 200, max: 15000, step: 100, unit: 'ms' },
+    ],
+  },
+  {
+    title: 'Neck: wander (slow turn)',
+    params: [
+      { key: 'neckWanderYaw', label: 'Yaw range', hint: 'Degrees left/right from rest.', min: 0, max: 60, step: 1, unit: '°' },
+      { key: 'neckWanderPitch', label: 'Pitch range', hint: 'Degrees of nod up/down from rest.', min: 0, max: 30, step: 1, unit: '°' },
+      { key: 'neckWanderRoll', label: 'Roll range', hint: 'Degrees of head tilt from rest.', min: 0, max: 30, step: 1, unit: '°' },
+      { key: 'neckWanderSpeed', label: 'Speed', hint: 'Lower is smoother and lazier.', min: 3, max: 200, step: 1, unit: '°/s' },
+    ],
+  },
+  {
+    title: 'Neck: dart (quick flick)',
+    params: [
+      { key: 'neckDartYaw', label: 'Yaw range', hint: 'Degrees left/right from rest.', min: 0, max: 60, step: 1, unit: '°' },
+      { key: 'neckDartPitch', label: 'Pitch range', hint: 'Degrees of nod up/down from rest.', min: 0, max: 30, step: 1, unit: '°' },
+      { key: 'neckDartRoll', label: 'Roll range', hint: 'Degrees of head tilt from rest.', min: 0, max: 30, step: 1, unit: '°' },
+      { key: 'neckDartSpeed', label: 'Speed', hint: 'Higher is snappier.', min: 3, max: 300, step: 5, unit: '°/s' },
+    ],
+  },
+  {
+    title: 'Neck: after speaking',
+    params: [
+      { key: 'neckReturnSpeed', label: 'Return-to-rest speed', hint: 'How fast the neck eases back to zero when speech ends.', min: 3, max: 200, step: 1, unit: '°/s' },
+    ],
+  },
 ];
 
 export type AnimationValues = Record<string, number>;

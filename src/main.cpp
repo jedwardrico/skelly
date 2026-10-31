@@ -5,6 +5,8 @@
 #include "AudioPlayer.h"
 #include "ControlAPI.h"
 #include "EyeAnimator.h"
+#include "NeckMixer.h"
+#include "NeckAnimator.h"
 #include "AnimationSettings.h"
 #ifdef ENABLE_BLUEPAD32
 #include "GamepadController.h"
@@ -14,6 +16,8 @@ static ServoController servos;
 static AudioPlayer audio;
 static ControlAPI controlApi;
 static EyeAnimator eyes;
+static NeckMixer neck;
+static NeckAnimator neckAnim;
 #ifdef ENABLE_BLUEPAD32
 static GamepadController gamepad;
 #endif
@@ -73,9 +77,11 @@ void setup() {
   controlApi.begin();
 
   eyes.begin(&servos);
+  neck.begin(&servos);
+  neckAnim.begin(&servos, &neck);
 
 #ifdef ENABLE_BLUEPAD32
-  gamepad.begin(&servos, &audio);
+  gamepad.begin(&servos, &audio, &neck);
   SkellyLog.println("[Skelly] BluePad32 gamepad support enabled");
 #endif
 
@@ -131,4 +137,5 @@ void loop() {
   }
 
   eyes.update(playing);
+  neckAnim.update(playing);
 }

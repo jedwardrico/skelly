@@ -20,11 +20,17 @@ WiFi - see `include/Secrets.h.example`).
   "volume": 0.6,
   "servos": {
     "jaw": 23.1,
+    "neck_left": 90,
+    "neck_right": 90,
+    "neck_yaw": 90,
     "eye_pan": 90,
     "eye_tilt": 90
   },
   "servoZero": {
     "jaw": 0,
+    "neck_left": 90,
+    "neck_right": 90,
+    "neck_yaw": 90,
     "eye_pan": 90,
     "eye_tilt": 90
   }
@@ -77,11 +83,13 @@ and persisted across reboots. Current value is `volume` in the status payload.
 ### `POST /api/servo`
 
 ```json
-{ "name": "eye_pan", "angle": 45 }
+{ "name": "neck_yaw", "angle": 45 }
 ```
 
 `name` must match an entry in `SERVO_CHANNELS` (`include/Config.h`). Moves
-instantly; angle is clamped to that servo's configured min/max.
+instantly; angle is clamped to that servo's configured min/max. Note that
+`neck_left`/`neck_right` are raw push-rod angles, not pitch/roll - see
+"Neck pitch/roll" below.
 
 ### `POST /api/servo/zero`
 
@@ -97,7 +105,7 @@ you want it to jump there too. Response: `{"ok":true}` or
 
 ### `GET /api/animation`, `POST /api/animation`, `POST /api/animation/reset`
 
-Jaw and eye animation tuning, persisted to flash (NVS) and applied live.
+Jaw, eye and neck animation tuning, persisted to flash (NVS) and applied live.
 `GET` returns `{"settings":{...},"defaults":{...}}`. `POST` takes any subset
 of the setting keys with numeric values (clamped to each setting's range) and
 returns `{"ok":true}`; `reset` clears all overrides.
@@ -105,7 +113,10 @@ returns `{"ok":true}`; `reset` clears all overrides.
 Keys: `jawGain`, `jawOpenFloor`, `jawSilence`, `jawAttackMs`, `jawReleaseMs`,
 `jawUpdateMs`, `eyeDartChance`, `eyeWanderPan`, `eyeWanderTilt`,
 `eyeWanderSpeed`, `eyeDartPan`, `eyeDartTilt`, `eyeDartSpeed`,
-`eyeIntervalMinMs`, `eyeIntervalMaxMs`, `eyeReturnSpeed`. Defaults and ranges
+`eyeIntervalMinMs`, `eyeIntervalMaxMs`, `eyeReturnSpeed`, and the neck
+equivalents `neckDartChance`, `neckWander{Yaw,Pitch,Roll,Speed}`,
+`neckDart{Yaw,Pitch,Roll,Speed}`, `neckIntervalMinMs`, `neckIntervalMaxMs`,
+`neckReturnSpeed`. Defaults and ranges
 live in `include/Config.h` and `lib/AnimationSettings`.
 
 ### `POST /api/upload`
@@ -173,8 +184,8 @@ animate a "talking" indicator or mouth graphic without polling:
   "file": "/audio/hello.mp3",
   "jawLevel": 0.42,
   "volume": 0.6,
-  "servos": { "jaw": 23.1, "eye_pan": 90, ... },
-  "servoZero": { "jaw": 4, "eye_pan": 90, ... }
+  "servos": { "jaw": 23.1, "neck_left": 90, ... },
+  "servoZero": { "jaw": 4, "neck_left": 90, ... }
 }
 ```
 
@@ -193,3 +204,10 @@ calibration UI the skull's actual state after a reboot or a fresh connect.
   `docs/ARCHITECTURE.md`.
 - **Auth** - none today. Fine on a private home network; add at least a
   shared-secret header/query param before exposing this beyond your LAN.
+- **Neck pitch/roll over the control API** - the neck's two front push-rod
+  servos (`neck_left`/`neck_right`) are only mixed into a combined
+  pitch/roll axis for gamepad input today (`lib/NeckMixer`, driven from
+  `GamepadController`). A client using `/api/servo` directly still commands
+  each rod's raw angle and has to do its own mixing; exposing a
+  `neck_pitch`/`neck_roll` command here is future work once the neck is
+  actually built and the mix is tuned against real hardware.

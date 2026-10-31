@@ -41,8 +41,18 @@ struct ServoChannelDef {
   float restAngle;
 };
 
+// The neck is a 3-servo rig: the head rotates around a single center pivot
+// at the front of the neck, and `neck_left`/`neck_right` each push/pull a
+// rod mounted on either side of that pivot. Driving them together nods the
+// head around the pivot (pitch); driving them opposite amounts rolls it
+// (tilt) - see lib/NeckMixer, which mixes a single pitch/roll pair down to
+// these two raw channels. `neck_yaw` is a separate, unmixed servo that
+// rotates the whole head assembly at the base.
 static const ServoChannelDef SERVO_CHANNELS[] = {
     {"jaw", 13, 0, 30, 0},
+    {"neck_left", 16, 60, 120, 90},
+    {"neck_right", 17, 60, 120, 90},
+    {"neck_yaw", 4, 30, 150, 90},
     {"eye_pan", 18, 0, 180, 90},
     {"eye_tilt", 19, 0, 180, 90},
 };
@@ -98,6 +108,22 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 #define EYE_INTERVAL_MIN_MS 350.0f
 #define EYE_INTERVAL_MAX_MS 1800.0f
 #define EYE_REST_RETURN_SPEED_DPS 60.0f
+
+// Neck animation while talking, same two move types as the eyes. Yaw is the
+// base rotation; pitch (nod) and roll (tilt) are mixed down to the two
+// push-rod servos by NeckMixer. Angles are +/- degrees around rest.
+#define NECK_DART_CHANCE 0.3f
+#define NECK_WANDER_YAW_DEG 25.0f
+#define NECK_WANDER_PITCH_DEG 8.0f
+#define NECK_WANDER_ROLL_DEG 6.0f
+#define NECK_WANDER_SPEED_DPS 20.0f
+#define NECK_DART_YAW_DEG 10.0f
+#define NECK_DART_PITCH_DEG 6.0f
+#define NECK_DART_ROLL_DEG 4.0f
+#define NECK_DART_SPEED_DPS 90.0f
+#define NECK_INTERVAL_MIN_MS 1500.0f
+#define NECK_INTERVAL_MAX_MS 5000.0f
+#define NECK_REST_RETURN_SPEED_DPS 30.0f
 
 // ---------------------------------------------------------------------------
 // WiFi / control API

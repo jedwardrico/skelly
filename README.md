@@ -2,7 +2,8 @@
 
 Animatronic talking skeleton, driven by an ESP32.
 
-- Servos (direct GPIO, via a Freenove breakout board) move the jaw and eyes.
+- Servos (direct GPIO, via a Freenove breakout board) move the jaw, neck, and
+  eyes.
 - A MAX98357A I2S amplifier plays speech clips, and the jaw is driven live
   off the audio's own volume envelope - no pre-baked mouth timing needed.
 - A WiFi JSON/WebSocket control API is the integration point for the
@@ -18,7 +19,7 @@ Animatronic talking skeleton, driven by an ESP32.
   WROOM, with GPIO headroom to add a camera module later)
 - Freenove breakout board (terminal-block servo/power breakout, no PCA9685)
 - MAX98357A I2S mono amplifier + small speaker
-- 6+ hobby servos for jaw/eyes (jaw: 1, eyes: 2)
+- 6+ hobby servos for jaw/neck/eyes (jaw: 1, neck: 3, eyes: 2)
 - 5V supply for servos and amp, separate from the ESP32's own power
 
 Full wiring and pinout: [`docs/WIRING.md`](docs/WIRING.md).
@@ -34,7 +35,9 @@ src/main.cpp                wires the modules together
 lib/ServoController/        direct-GPIO servo control, by name, non-blocking moves
 lib/AudioPlayer/            MAX98357A I2S playback + audio-envelope jaw sync
 lib/ControlAPI/             WiFi + REST/WebSocket JSON control surface
+lib/NeckMixer/              mixes pitch/roll into the two push-rod neck servos
 lib/EyeAnimator/            autonomous eye_pan/eye_tilt movement while talking
+lib/NeckAnimator/           autonomous neck yaw/pitch/roll movement while talking
 lib/GamepadController/      BluePad32 scaffold (compiles to nothing by default)
 data/audio/                 drop .mp3/.wav speech clips here
 docs/                       architecture, wiring, API reference, BluePad32 setup

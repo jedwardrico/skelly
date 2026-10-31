@@ -14,6 +14,7 @@
 
 static ServoController *s_servos = nullptr;
 static AudioPlayer *s_audio = nullptr;
+static NeckMixer *s_neck = nullptr;
 static ControllerPtr s_controllers[BP32_MAX_GAMEPADS];
 volatile bool g_jawOverride = false;
 
@@ -45,9 +46,10 @@ static void onDisconnectedController(ControllerPtr ctl) {
   }
 }
 
-void GamepadController::begin(ServoController *servos, AudioPlayer *audio) {
+void GamepadController::begin(ServoController *servos, AudioPlayer *audio, NeckMixer *neck) {
   s_servos = servos;
   s_audio = audio;
+  s_neck = neck;
   BP32.setup(&onConnectedController, &onDisconnectedController);
   BP32.enableVirtualDevice(false); // ignore the virtual gamepad BluePad32 can emulate over BLE
 }
@@ -64,6 +66,15 @@ void GamepadController::update() {
   for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
     ControllerPtr ctl = s_controllers[i];
     if (!ctl || !ctl->isConnected() || !ctl->hasData() || !ctl->isGamepad()) continue;
+
+    // Right stick: neck pitch/roll, mixed through NeckMixer down to the two
+    // push-rod servos (neck_left/neck_right). Always live.
+    s_neck->setPitch(mapAxis(ctl->axisRY(), -20, 20), 200);
+    s_neck->setRoll(mapAxis(ctl->axisRX(), -15, 15), 200);
+
+    // Left stick X: neck yaw (base rotation), always live. Left stick Y is
+    // used below for jaw puppeteering while L1 is held.
+    s_servos->setTarget("neck_yaw", mapAxis(ctl->axisX(), 30, 150), 200);
 
     // Hold L1 to puppeteer the jaw directly with the left stick; otherwise
     // the jaw stays under audio-envelope control from main.cpp.

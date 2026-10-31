@@ -24,6 +24,18 @@ const AnimParamDef kAnimParams[] = {
     P("eyeIntervalMinMs", eyeIntervalMinMs, 100.0f, 10000.0f, EYE_INTERVAL_MIN_MS),
     P("eyeIntervalMaxMs", eyeIntervalMaxMs, 100.0f, 10000.0f, EYE_INTERVAL_MAX_MS),
     P("eyeReturnSpeed", eyeReturnSpeed, 5.0f, 400.0f, EYE_REST_RETURN_SPEED_DPS),
+    P("neckDartChance", neckDartChance, 0.0f, 1.0f, NECK_DART_CHANCE),
+    P("neckWanderYaw", neckWanderYaw, 0.0f, 60.0f, NECK_WANDER_YAW_DEG),
+    P("neckWanderPitch", neckWanderPitch, 0.0f, 30.0f, NECK_WANDER_PITCH_DEG),
+    P("neckWanderRoll", neckWanderRoll, 0.0f, 30.0f, NECK_WANDER_ROLL_DEG),
+    P("neckWanderSpeed", neckWanderSpeed, 3.0f, 200.0f, NECK_WANDER_SPEED_DPS),
+    P("neckDartYaw", neckDartYaw, 0.0f, 60.0f, NECK_DART_YAW_DEG),
+    P("neckDartPitch", neckDartPitch, 0.0f, 30.0f, NECK_DART_PITCH_DEG),
+    P("neckDartRoll", neckDartRoll, 0.0f, 30.0f, NECK_DART_ROLL_DEG),
+    P("neckDartSpeed", neckDartSpeed, 3.0f, 300.0f, NECK_DART_SPEED_DPS),
+    P("neckIntervalMinMs", neckIntervalMinMs, 200.0f, 15000.0f, NECK_INTERVAL_MIN_MS),
+    P("neckIntervalMaxMs", neckIntervalMaxMs, 200.0f, 15000.0f, NECK_INTERVAL_MAX_MS),
+    P("neckReturnSpeed", neckReturnSpeed, 3.0f, 200.0f, NECK_REST_RETURN_SPEED_DPS),
 };
 #undef P
 const size_t kAnimParamCount = sizeof(kAnimParams) / sizeof(kAnimParams[0]);

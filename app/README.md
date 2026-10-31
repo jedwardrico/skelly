@@ -10,7 +10,7 @@ WiFi, plus on-device text-to-speech.
   fallback AP). Connection state and live status stream over the `/ws`
   WebSocket, REST is used as a fallback (see `../docs/API.md`).
 - **Control** - see what's playing and the live jaw level (with a Stop
-  button), and jog the jaw/eye servos with sliders.
+  button), and jog the jaw/neck/eye servos with sliders.
 - **Speech** - type text and have Skelly say it. By default the text is
   turned into speech with ElevenLabs (`eleven_v4`, searchable voice picker
   that defaults to Gork), uploaded to the skull and played on its speaker with

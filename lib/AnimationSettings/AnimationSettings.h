@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-// Runtime-tunable jaw and eye animation parameters. Defaults come from
+// Runtime-tunable jaw, eye and neck animation parameters. Defaults come from
 // Config.h; overrides are persisted to flash (NVS) so they survive reboots
 // and are shared by every app that connects. Each setting is a plain float so
 // the REST API and the app can treat them generically (see kAnimParams).
@@ -27,6 +27,21 @@ struct AnimationSettings {
   float eyeIntervalMinMs; // pause between moves
   float eyeIntervalMaxMs;
   float eyeReturnSpeed;   // deg/sec easing back to rest after talking
+
+  // Neck (idle animation while talking). Yaw = base rotation, pitch = nod,
+  // roll = tilt (the latter two go through NeckMixer to the push-rod servos).
+  float neckDartChance;   // 0-1 probability a move is a dart vs a wander
+  float neckWanderYaw;    // +/- degrees from rest
+  float neckWanderPitch;
+  float neckWanderRoll;
+  float neckWanderSpeed;  // deg/sec
+  float neckDartYaw;
+  float neckDartPitch;
+  float neckDartRoll;
+  float neckDartSpeed;
+  float neckIntervalMinMs; // pause between moves
+  float neckIntervalMaxMs;
+  float neckReturnSpeed;  // deg/sec easing back to rest after talking
 };
 
 struct AnimParamDef {
