@@ -68,7 +68,12 @@ static const size_t SERVO_CHANNEL_COUNT = sizeof(SERVO_CHANNELS) / sizeof(SERVO_
 // ---------------------------------------------------------------------------
 #define AUDIO_DIR "/audio"
 // 0.0-1.0. MAX98357A has no analog volume pin, so gain is applied in software.
-#define AUDIO_DEFAULT_GAIN 0.6f
+#define AUDIO_DEFAULT_GAIN 0.2f
+// Amplifier headroom: the 0.0-1.0 volume is multiplied by this before reaching
+// the I2S output, so volume 1.0 is this many times louder than unity. Samples
+// are clipped, so very loud source audio distorts at the top of the range.
+// Must stay below 4.0 (ESP8266Audio stores gain as 2.6 fixed point in a byte).
+#define AUDIO_MAX_GAIN 3.0f
 
 // Deeper I2S DMA queue than the library default (5 x 2304 bytes, ~65ms at
 // 44.1kHz stereo) so a busy main loop doesn't underrun the amp. Lower if RAM
