@@ -41,7 +41,7 @@ bool AudioPlayer::begin() {
     currentGain = constrain(prefs.getFloat(GAIN_PREFS_KEY, AUDIO_DEFAULT_GAIN), 0.0f, 1.0f);
     prefs.end();
   }
-  s_out->SetGain(currentGain);
+  s_out->SetGain(currentGain * AUDIO_MAX_GAIN);
 
 #if I2S_AMP_ENABLE_PIN >= 0
   pinMode(I2S_AMP_ENABLE_PIN, OUTPUT);
@@ -74,7 +74,7 @@ void AudioPlayer::taskEntry(void *arg) {
 
 void AudioPlayer::setGain(float gain) {
   currentGain = constrain(gain, 0.0f, 1.0f);
-  if (s_out) s_out->SetGain(currentGain);
+  if (s_out) s_out->SetGain(currentGain * AUDIO_MAX_GAIN);
   Preferences prefs;
   prefs.begin(GAIN_PREFS_NAMESPACE, /*readOnly=*/false);
   prefs.putFloat(GAIN_PREFS_KEY, currentGain);
